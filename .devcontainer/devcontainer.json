@@ -1,0 +1,64 @@
+{
+  "name": "Golang",
+  "image": "mcr.microsoft.com/devcontainers/go:1.23-bookworm",
+  "features": {
+    "ghcr.io/devcontainers-extra/features/aws-cdk": {},
+    "ghcr.io/devcontainers/features/aws-cli": {},
+    //"ghcr.io/devcontainers-extra/features/pnpm": {}
+    "ghcr.io/customink/codespaces-features/sam-cli": {},
+    "ghcr.io/brokeyourbike/devcontainer-features/mockery-go:0": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "amazonwebservices.amazon-q-vscode",
+        "golang.Go",
+        "ms-vscode.makefile-tools",
+        "redhat.vscode-yaml",
+        "github.vscode-github-actions"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "typescript.updateImportsOnFileMove.enabled": "always",
+        "javascript.updateImportsOnFileMove.enabled": "always"
+      }
+    }
+  },
+  "mounts": [
+    {
+      "source": "aws-cache",
+      "target": "/home/vscode/.cache/aws",
+      "type": "volume"
+    },
+    {
+      "source": "go-cache",
+      "target": "/home/vscode/.cache/go-build",
+      "type": "volume"
+    },
+    {
+      "source": "${localEnv:HOME}/.ssh",
+      "target": "/home/vscode/.ssh",
+      "type": "bind"
+    },
+    {
+      "source": "${localEnv:HOME}/.aws",
+      "target": "/home/vscode/.aws",
+      "type": "bind"
+    },
+    {
+      "source": "${localEnv:HOME}/.gitconfig-aws",
+      "target": "/home/vscode/.gitconfig",
+      "type": "bind"
+    }
+  ],
+  "remoteUser": "vscode",
+  "containerEnv": {
+    " GOPROXY": "direct"
+  },
+  "postCreateCommand": "sudo chmod auog+rwx /home/vscode/.cache -R && npm install -g repolinter"
+}
