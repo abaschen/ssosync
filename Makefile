@@ -10,6 +10,8 @@ APP_NAME ?= ssosync
 
 .PHONY: test
 test:
+	rm internal/mocks/* -f
+	mockery
 	go test ./...
 
 .PHONY: go-build
