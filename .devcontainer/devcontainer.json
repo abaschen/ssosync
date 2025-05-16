@@ -11,7 +11,6 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "esbenp.prettier-vscode",
         "amazonwebservices.amazon-q-vscode",
         "golang.Go",
         "ms-vscode.makefile-tools",
@@ -20,12 +19,13 @@
       ],
       "settings": {
         "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "terminal.integrated.allowChords": false,
         "editor.codeActionsOnSave": {
-          "source.fixAll.eslint": "explicit"
+          "source.organizeImports": "always"
         },
         "typescript.updateImportsOnFileMove.enabled": "always",
-        "javascript.updateImportsOnFileMove.enabled": "always"
+        "javascript.updateImportsOnFileMove.enabled": "always",
+        "go.useLanguageServer": true
       }
     }
   },
