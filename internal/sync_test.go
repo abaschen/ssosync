@@ -949,7 +949,7 @@ func Test_GetGroupMembershipsLists(t *testing.T) {
 	actualOutput, err := mockClient.GetGroupMembershipsLists(sampleGroupsInput, sampleUsersMapInput)
 
 	assert.True(t, reflect.DeepEqual(expectedOutput, actualOutput))
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func Test_RemoveUserFromGroup(t *testing.T) {
@@ -981,5 +981,5 @@ func Test_RemoveUserFromGroup(t *testing.T) {
 
 	err := mockClient.RemoveUserFromGroup(&sampleUserInput, &sampleGroupInput)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }

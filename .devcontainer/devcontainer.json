@@ -15,7 +15,8 @@
         "golang.Go",
         "ms-vscode.makefile-tools",
         "redhat.vscode-yaml",
-        "github.vscode-github-actions"
+        "github.vscode-github-actions",
+        "GitHub.vscode-pull-request-github"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -25,7 +26,20 @@
         },
         "typescript.updateImportsOnFileMove.enabled": "always",
         "javascript.updateImportsOnFileMove.enabled": "always",
-        "go.useLanguageServer": true
+        "go.useLanguageServer": true,
+        "go.lintTool": "golangci-lint",
+        "go.lintFlags": [
+          "--path-mode=abs",
+          "--fast-only"
+        ],
+        "go.formatTool": "custom",
+        "go.alternateTools": {
+          "customFormatter": "golangci-lint"
+        },
+        "go.formatFlags": [
+          "fmt",
+          "--stdin"
+        ]
       }
     }
   },
@@ -60,5 +74,5 @@
   "containerEnv": {
     " GOPROXY": "direct"
   },
-  "postCreateCommand": "sudo chmod auog+rwx /home/vscode/.cache -R && npm install -g repolinter"
+  "postCreateCommand": "sudo chmod auog+rwx /home/vscode/.cache -R && npm install -g npm && npm install -g repolinter"
 }

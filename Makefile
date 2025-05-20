@@ -12,7 +12,7 @@ APP_NAME ?= ssosync
 test:
 	rm internal/mocks/* -f
 	mockery
-	go test ./...
+	go test ./... -coverprofile=coverage.out
 
 .PHONY: go-build
 go-build:
