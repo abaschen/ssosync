@@ -39,3 +39,4 @@ staging.yaml
 *.orig
 *.rej
 *.swo
+/bootstrap

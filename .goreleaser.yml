@@ -5,11 +5,13 @@ version: 2
 before:
   hooks:
     - go mod download
+gomod:
+  env:
+    - GOPROXY=direct
 builds:
-  - env:
+  - id: others
+    env:
       - CGO_ENABLED=0
-      - GOAMD64=v1 # explicit default
-      - GOARM64=v8.2
     goos:
       - linux
       - darwin
@@ -19,13 +21,56 @@ builds:
       - amd64
       - arm
       - arm64
+    goarm64:
+      - v8.0
+    goamd64:
+      - v1
+    goarm:
+      - '6'
     ignore:
+      - goos: linux
+        goarch: "arm64"
+      - goos: linux
+        goarch: "amd64"
       - goos: darwin
         goarch: "386"
       - goos: windows
         goarch: "386"
     ldflags:
-      - -s -w -X github.com/awslabs/ssosync/cmd.version={{.Version}} -X github.com/awslabs/ssosync/cmd.commit={{.Commit}} -X github.com/awslabs/ssosync/cmd.date={{.Date}} -X github.com/awslabs/ssosync/cmd.builtBy=goreleaser
+      - -s -w 
+      - -X github.com/awslabs/ssosync/cmd.version={{.Version}}
+      - -X github.com/awslabs/ssosync/cmd.commit={{.Commit}}
+      - -X github.com/awslabs/ssosync/cmd.date={{.Date}}
+      - -X github.com/awslabs/ssosync/cmd.builtBy=goreleaser
+
+  - id: ssosync
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - arm64
+      - amd64
+    goarm64:
+      - v8.2
+    goamd64:
+      - v1
+    ldflags:
+      - -s -w 
+      - -X github.com/awslabs/ssosync/cmd.version={{- if index .Env "GitTag" }}{{.Env.GitTag}}{{- else }}{{.Version}}{{ end -}}
+      - -X github.com/awslabs/ssosync/cmd.commit={{- if index .Env "GitTag" }}{{.Env.GitCommit}}{{- else }}{{.FullCommit}}{{ end -}}
+      - -X github.com/awslabs/ssosync/cmd.date={{.Date}}
+      - -X github.com/awslabs/ssosync/cmd.builtBy=goreleaser
+      - -X github.com/awslabs/ssosync/cmd.goversion={{.Env.GOVERSION}}
+
+upx:
+  - enabled: true
+    ids: [others, ssosync]
+    goos: [linux]
+    goarch: [arm, arm64, amd64]
+    compress: best
+    lzma: true
+
 checksum:
   name_template: "{{ .ProjectName }}_checksums.txt"
 changelog:
@@ -48,3 +93,5 @@ archives:
       - goos: windows
         formats:
           - zip
+
+
