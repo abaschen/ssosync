@@ -6,12 +6,18 @@ on:
     tags:
       - '*'
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup go
         uses: actions/setup-go@v5
@@ -33,9 +39,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
-      - name: Unshallow
-        run: git fetch --prune --unshallow
+        with:
+          fetch-depth: 0
         
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -45,7 +50,7 @@ jobs:
       - uses: ko-build/setup-ko@v0.6
           
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
           args: release --clean

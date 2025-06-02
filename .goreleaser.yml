@@ -50,11 +50,12 @@ archives:
           - zip
 
 kos:
-  - repositories: 
-    - ghcr.io/awslabs/ssosync
+  - repositories:
+      - ghcr.io/awslabs/ssosync
     tags:
       - "{{.Version}}"
       - latest
+    sbom_directory: "dist/sbom"
     bare: true
     preserve_import_paths: false
     platforms:
