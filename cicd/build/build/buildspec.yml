@@ -16,7 +16,7 @@ phases:
       - apt -qq --yes upgrade
 
       # Install go.lang
-      - GoVersion=${GOLANG_20_VERSION}
+      - GOVERSION=$(go version | awk '{print $3;}')
 
       # Install golint - now deprecated
       - go install golang.org/x/lint/golint@latest
@@ -68,11 +68,8 @@ phases:
 
   post_build:
     commands:
-      # Tweak the .goreleaser.yml so it uses the vairables from .Env
-      - patch .goreleaser.yml cicd/build/build/goreleaser.patch
-
-      # Make main
-      - goreleaser build --snapshot --clean
+      # Make main only
+      - goreleaser build  --snapshot --clean --ids ssosync
 
       # Check we've packaged something useful
       - ./dist/ssosync_linux_amd64_v1/ssosync --version

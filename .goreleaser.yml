@@ -30,12 +30,15 @@ builds:
     ignore:
       - goos: linux
         goarch: "arm64"
+      - goos: linux
+        goarch: "amd64"
       - goos: darwin
         goarch: "386"
       - goos: windows
         goarch: "386"
     ldflags:
-      - -s -w -X github.com/awslabs/ssosync/cmd.version={{.Version}} -X github.com/awslabs/ssosync/cmd.commit={{.Commit}} -X github.com/awslabs/ssosync/cmd.date={{.Date}} -X github.com/awslabs/ssosync/cmd.builtBy=goreleaser
+      - -s -w 
+      - -X github.com/awslabs/ssosync/cmd.version={{.Version}} -X github.com/awslabs/ssosync/cmd.commit={{.Commit}} -X github.com/awslabs/ssosync/cmd.date={{.Date}} -X github.com/awslabs/ssosync/cmd.builtBy=goreleaser
 
   - id: ssosync
     env:
@@ -44,10 +47,18 @@ builds:
       - linux
     goarch:
       - arm64
+      - amd64
     goarm64:
       - v8.2
+    goamd64:
+      - v1
     ldflags:
-      - -s -w -X github.com/awslabs/ssosync/cmd.version={{.Version}} -X github.com/awslabs/ssosync/cmd.commit={{.Commit}} -X github.com/awslabs/ssosync/cmd.date={{.Date}} -X github.com/awslabs/ssosync/cmd.builtBy=goreleaser
+      - -s -w 
+      - -X github.com/awslabs/ssosync/cmd.version={{- if index .Env "GitTag" }}{{.Env.GitTag}}{{- else }}{{.Version}}{{ end -}}
+      - -X github.com/awslabs/ssosync/cmd.commit={{- if index .Env "GitTag" }}{{.Env.GitCommit}}{{- else }}{{.FullCommit}}{{ end -}}
+      - -X github.com/awslabs/ssosync/cmd.date={{.Date}}
+      - -X github.com/awslabs/ssosync/cmd.builtBy=goreleaser
+      - -X github.com/awslabs/ssosync/cmd.goversion={{.Env.GOVERSION}}
 
 upx:
   - enabled: true
