@@ -1,5 +1,5 @@
 OUTPUT = main # Referenced as Handler in sar-template.yaml
-RELEASER = goreleaser
+
 PACKAGED_TEMPLATE = packaged.yaml
 STACK_NAME := $(STACK_NAME)
 S3_BUCKET := $(S3_BUCKET)
@@ -40,6 +40,9 @@ lambda:
 
 .PHONY: build
 build: clean lambda
+
+.PHONY: dry-run
+dry-run: $(GOREL) release --clean --snapshot --skip=publish
 
 .PHONY: api
 api: build
