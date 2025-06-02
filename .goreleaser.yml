@@ -48,3 +48,17 @@ archives:
       - goos: windows
         formats:
           - zip
+
+kos:
+  - repositories: 
+    - ghcr.io/awslabs/ssosync
+    tags:
+      - "{{.Version}}"
+      - latest
+    bare: true
+    preserve_import_paths: false
+    platforms:
+      - linux/amd64
+      - linux/arm64
+docker_signs:
+  - artifacts: manifests
