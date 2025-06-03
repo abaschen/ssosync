@@ -31,7 +31,7 @@ install:
 
 .PHONY: vet
 vet:
-	$(go env GOPATH)/bin/golangci-lint run
+	golangci-lint run
 
 main: main.go
 	$(GOREL) build --snapshot --clean
