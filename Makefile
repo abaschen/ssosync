@@ -32,6 +32,7 @@ install:
 
 .PHONY: vet
 vet:
+	mockery
 	golangci-lint run
 
 main: main.go
