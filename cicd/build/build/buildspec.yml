@@ -8,6 +8,8 @@ env:
     git-credential-helper: yes
     GOVERSION: go1.24.3
     VERSION_LINT: v2.1.6
+    VERSION_MOCKERY: v3.3.2
+    VERSION_GOREL: v2.9.0
 
 phases:
   install:
@@ -21,16 +23,19 @@ phases:
       - goenv install ${GOVERSION#go}
       - goenv global ${GOVERSION#go}
       # Install linter
-      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b ~/.goenv/bin v2.1.6
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b "$(goenv prefix)/bin/" v2.1.6
+      - wget -qO- https://github.com/goreleaser/goreleaser/releases/download/${VERSION_GOREL}/goreleaser_Linux_x86_64.tar.gz | gunzip | tar xvf - -C "$(goenv prefix)/bin/"
+      - wget -qO- https://github.com/vektra/mockery/releases/download/${VERSION_MOCKERY}/mockery_${VERSION_MOCKERY#v}_Linux_x86_64.tar.gz | gunzip | tar xvf - -C "$(goenv prefix)/bin/"
       - goenv rehash
       - golangci-lint --version
+      - mockery version
 
   pre_build:
     commands:
       # Print all environment variables (handy for AWS CodeBuild logs)
       - env
       - go version
-      - "[ \"$(go version | awk '{print $3}')\" = \"${GOVERSION}\" ] || (echo \"Wrong go version\" && exit 1)"
+      - '[ "$(go version | awk ''{print $3}'')" = "${GOVERSION}" ] || (echo "Wrong go version" && exit 1)'
 
       # Fetch all dependencies
       # - go env -w GOPROXY=direct
@@ -41,7 +46,6 @@ phases:
 
       # Run all tests included with our application
       - make test
-
 
   build:
     commands:
@@ -57,8 +61,8 @@ phases:
       - ./dist/ssosync_linux_amd64_v1/ssosync --version
 cache:
   paths:
-  - /root/.cache/go-build/**/*
-  - '/go/pkg/**/*'
+    - /root/.cache/go-build/**/*
+    - "/go/pkg/**/*"
 artifacts:
   files:
     - dist/**/*

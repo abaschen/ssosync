@@ -6,7 +6,6 @@ S3_BUCKET := $(S3_BUCKET)
 S3_PREFIX := $(S3_PREFIX)
 TEMPLATE = sar-template.yaml
 APP_NAME ?= ssosync
-GOREL ?= go run github.com/goreleaser/goreleaser/v2@latest
 
 .PHONY: test
 test:
@@ -16,7 +15,7 @@ test:
 
 .PHONY: go-build
 go-build:
-	$(GOREL) build --snapshot --clean --id ssosync
+	goreleaser build --snapshot --clean --id ssosync
 
 .PHONY: clean
 clean:
@@ -34,7 +33,7 @@ vet:
 	golangci-lint run
 
 main: main.go
-	$(GOREL) build --snapshot --clean
+	goreleaser build --snapshot --clean
 
 # compile the code to run in Lambda (local or real)
 .PHONY: lambda
@@ -45,7 +44,7 @@ lambda:
 build: clean lambda
 
 .PHONY: dry-run
-dry-run: $(GOREL) release --clean --snapshot --skip=publish
+dry-run: goreleaser release --clean --snapshot --skip=publish
 
 .PHONY: api
 api: build
