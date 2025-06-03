@@ -1,0 +1,11 @@
+linters:
+  default: none
+  # Enable specific linter.
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gosec
+    - testifylint

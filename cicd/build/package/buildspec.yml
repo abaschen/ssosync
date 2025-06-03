@@ -17,12 +17,12 @@ phases:
       # Check that the files need to package exist
       - ls README.md
       - ls SAR.md
-      - ls dist/ssosync_linux_arm64_v8.0/ssosync
-      - ls dist/ssosync_linux_amd64_v1/ssosync
+      - ls dist/ssosync_linux_arm64_v8.2/ssosync
+      - ls dist/others_linux_amd64_v1/ssosync
 
       # Check that the executable works
-      - ./dist/ssosync_linux_amd64_v1/ssosync --version
-      - mv dist/ssosync_linux_arm64_v8.0/ssosync bootstrap
+      - ./dist/others_linux_amd64_v1/ssosync --version
+      - mv dist/ssosync_linux_arm64_v8.2/ssosync bootstrap
 
   build:
     commands:
@@ -40,8 +40,10 @@ phases:
 
   post_build:
     commands:
+      - export GitTag=`git describe --tags --abbrev=0`
       # Create parameters
       - export AppVersion="${GitTag#v}-${GitVersionHash}"
+      - echo "AppVersion=${AppVersion}"
       - aws ssm put-parameter --name "/SSOSync/Staging/Version" --value ${AppVersion} --type String --overwrite
 
       # remove the previous builds

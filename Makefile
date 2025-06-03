@@ -1,5 +1,5 @@
 OUTPUT = main # Referenced as Handler in sar-template.yaml
-RELEASER = goreleaser
+
 PACKAGED_TEMPLATE = packaged.yaml
 STACK_NAME := $(STACK_NAME)
 S3_BUCKET := $(S3_BUCKET)
@@ -16,19 +16,22 @@ test:
 
 .PHONY: go-build
 go-build:
-	go build -o $(APP_NAME) main.go
+	$(GOREL) build --snapshot --clean --id ssosync
 
 .PHONY: clean
 clean:
 	rm -f $(OUTPUT) $(PACKAGED_TEMPLATE)
 
-build-SSOSyncFunction:
-	GOOS=linux GOARCH=arm64 go build -o bootstrap main.go
-	cp dist/ssosync_linux_arm64/ssosync $(ARTIFACTS_DIR)/bootstrap
+build-SSOSyncFunction: go-build
+	cp dist/ssosync_linux_arm64_v8.2/ssosync $(ARTIFACTS_DIR)/bootstrap
 
 .PHONY: install
 install:
-	go get ./...
+	go mod download
+
+.PHONY: vet
+vet:
+	golangci-lint run
 
 main: main.go
 	$(GOREL) build --snapshot --clean
@@ -41,6 +44,9 @@ lambda:
 .PHONY: build
 build: clean lambda
 
+.PHONY: dry-run
+dry-run: $(GOREL) release --clean --snapshot --skip=publish
+
 .PHONY: api
 api: build
 	sam local start-api
@@ -51,7 +57,7 @@ publish:
 
 .PHONY: package
 package: build
-	cp dist/ssosync_linux_arm64/ssosync ./bootstrap
+	cp dist/ssosync_linux_arm64_v8.2/ssosync ./bootstrap
 	sam package --s3-bucket $(S3_BUCKET) --output-template-file $(PACKAGED_TEMPLATE) --s3-prefix $(S3_PREFIX)
 
 .PHONY: deploy

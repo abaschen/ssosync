@@ -189,21 +189,6 @@ Resources:
                 OAuthToken: !Ref GitHubOAuthToken
         - Name: App
           Actions:
-            - Name: Git-Metadata
-              Namespace: Git
-              InputArtifacts:
-                - Name: Source
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Version: "1"
-                Provider: CodeBuild
-              OutputArtifacts:
-                - Name: GitVars
-              RunOrder: 1
-              Configuration:
-                ProjectName: !Ref GitMetadata
-                PrimarySource: Source
             - Name: GoLang-Build
               InputArtifacts:
                 - Name: Source
@@ -218,7 +203,7 @@ Resources:
               Configuration:
                 ProjectName: !Ref CodeBuildApp
                 PrimarySource: Source
-                EnvironmentVariables: '[{"name":"GitTag","value":"#{Git.Tag}","type":"PLAINTEXT"},{"name":"GitCommit","value":"#{Git.CommitId}","type":"PLAINTEXT"}]'
+                EnvironmentVariables: '[{"name":"GitVersionHash","value":"#{GitHub.CommitId}","type":"PLAINTEXT"}]'
             - Name: SAM-Package-SAR-Stage
               ActionTypeId:
                 Category: Build
@@ -229,7 +214,7 @@ Resources:
               Configuration:
                 ProjectName: !Ref CodeBuildPackage
                 PrimarySource: Source
-                EnvironmentVariables: '[{"name":"GitTag","value":"#{Git.Tag}","type":"PLAINTEXT"},{"name":"GitVersionHash","value":"#{Git.CommitHash}","type":"PLAINTEXT"}]'
+                EnvironmentVariables: '[{"name":"GitVersionHash","value":"#{GitHub.CommitId}","type":"PLAINTEXT"}]'
               OutputArtifacts:
                 - Name: Packaged
               InputArtifacts:
@@ -248,7 +233,7 @@ Resources:
               Configuration:
                 ProjectName: !Ref CodeBuildStaging
                 PrimarySource: Source
-                EnvironmentVariables: '[{"name":"GitTag","value":"#{Git.Tag}","type":"PLAINTEXT"},{"name":"GitVersionHash","value":"#{Git.CommitHash}","type":"PLAINTEXT"}]'
+                EnvironmentVariables: '[{"name":"GitVersionHash","value":"#{GitHub.CommitId}","type":"PLAINTEXT"}]'
               OutputArtifacts:
                 - Name: Tests
               InputArtifacts:
@@ -328,41 +313,6 @@ Resources:
               InputArtifacts:
                 - Name: Tests
               RunOrder: 1
-
-  GitMetadata:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: SSOSync-Git-Metadata
-      Description: Build project for SSOSync
-      ServiceRole: !Ref CodeBuildAppRole
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec: "cicd/build/gitvars/buildspec.yml"
-      Environment:
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:7.0
-        Type: LINUX_CONTAINER
-        EnvironmentVariables:
-          - Name: ARTIFACT_S3_BUCKET
-            Value: !Sub ${ArtifactBucket}
-          - Name: GitRepo
-            Value: "https://github.com/awslabs/ssosync"
-          - Name: GitBranch
-            Value: !Ref BranchName
-      Artifacts:
-        Name: SSOSync
-        Type: CODEPIPELINE
-      LogsConfig:
-        CloudWatchLogs:
-          GroupName: !Ref CodePipelineLogGroup
-          StreamName: !Ref GitMetadataLogs
-          Status: ENABLED
-
-  GitMetadataLogs:
-    Type: AWS::Logs::LogStream
-    Properties:
-      LogGroupName: !Ref CodePipelineLogGroup
-      LogStreamName: SSOSync-Git-Metadata
 
   CodeBuildApp:
     Type: AWS::CodeBuild::Project

@@ -19,6 +19,7 @@ phases:
   build:
     commands:
       # Create parameters
+      - export GitTag=`git describe --tags --abbrev=0`
       - export AppVersion="${GitTag#v}-${GitVersionHash}"
       - aws ssm put-parameter --name "/SSOSync/Staging/Version" --value ${AppVersion} --type String --overwrite
 

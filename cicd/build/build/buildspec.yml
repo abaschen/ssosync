@@ -2,82 +2,63 @@ version: 0.2
 
 env:
   variables:
+    GOROOT:
+    GOPATH:
     GO111MODULE: "on"
     git-credential-helper: yes
+    GOVERSION: go1.24.3
+    VERSION_LINT: v2.1.6
 
 phases:
   install:
     commands:
-      # Add goreleaser repo
-      - echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | sudo tee /etc/apt/sources.list.d/goreleaser.list
-
       # Update the repos
-      - apt -qq --yes update
-      - apt -qq --yes upgrade
-
-      # Install go.lang
-      - GoVersion=${GOLANG_20_VERSION}
-
-      # Install golint - now deprecated
-      - go install golang.org/x/lint/golint@latest
-
-      # Install staticcheck - use static install from tarball
-      - wget -qO- https://github.com/dominikh/go-tools/releases/download/2025.1.1/staticcheck_linux_386.tar.gz | tar -xvz -C ./
-
-      # Install Testify to use common assertions and mocks in tests
-      - go get github.com/stretchr/testify
-
-      # Install goreleaser - go install method broken due to dependancies using apt static binary approach
-      #      - go install github.com/goreleaser/goreleaser@latest
-      - apt -qq --yes install goreleaser
+      #- apt-get -qq --yes update && apt-get -qq --yes upgrade
+      - BUILD_DIR=$PWD
+      - cd /root/.goenv/plugins/go-build/../.. && git pull && cd -
+      - cd /root/.goenv && git fetch --all && git pull
+      - cd $BUILD_DIR
+      - goenv install ${GOVERSION#go}
+      - goenv global ${GOVERSION#go}
+      - goenv rehash
+      # Install linter
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.1.6
+      - golangci-lint --version
 
   pre_build:
     commands:
       # Print all environment variables (handy for AWS CodeBuild logs)
       - env
+      - go version
+      - "[ \"$(go version | awk '{print $3}')\" = \"${GOVERSION}\" ] || (echo \"Wrong go version\" && exit 1)"
 
       # Fetch all dependencies
       # - go env -w GOPROXY=direct
-      - go get ./...
-
-      # Run staticcheck
-      - staticcheck/staticcheck ./...
-
-      # Ensure code passes all lint tests
-      #- golint -set_exit_status ./...
+      - make install
 
       # Check the Go code for common problems with 'go vet'
-      - go vet ./...
+      - make vet
 
       # Run all tests included with our application
-      - go test ./...
+      - make test
+
 
   build:
     commands:
       # Make clean
-      - rm -f main packaged.yaml
+      - make clean
 
       # Make go-build
-      - go build -o ${APP_NAME} main.go
-
-      # Does it exist?
-      - ls ${APP_NAME}
-
-      # Does it run?
-      - ./${APP_NAME} --version
+      - make build
 
   post_build:
     commands:
-      # Tweak the .goreleaser.yml so it uses the vairables from .Env
-      - patch .goreleaser.yml cicd/build/build/goreleaser.patch
-
-      # Make main
-      - goreleaser build --snapshot --clean
-
       # Check we've packaged something useful
       - ./dist/ssosync_linux_amd64_v1/ssosync --version
-
+cache:
+  paths:
+  - /root/.cache/go-build/**/*
+  - '/go/pkg/**/*'
 artifacts:
   files:
-    - ${APP_NAME}
     - dist/**/*
