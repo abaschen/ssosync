@@ -72,7 +72,7 @@
   ],
   "remoteUser": "vscode",
   "containerEnv": {
-    " GOPROXY": "direct"
+    "GOPROXY": "direct"
   },
   "postCreateCommand": "sudo chmod auog+rwx /home/vscode/.cache -R && npm install -g npm && npm install -g repolinter"
 }

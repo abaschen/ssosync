@@ -203,7 +203,6 @@ Resources:
               Configuration:
                 ProjectName: !Ref CodeBuildApp
                 PrimarySource: Source
-                EnvironmentVariables: '[{"name":"GitVersionHash","value":"#{GitHub.CommitId}","type":"PLAINTEXT"}]'
             - Name: SAM-Package-SAR-Stage
               ActionTypeId:
                 Category: Build
@@ -214,7 +213,6 @@ Resources:
               Configuration:
                 ProjectName: !Ref CodeBuildPackage
                 PrimarySource: Source
-                EnvironmentVariables: '[{"name":"GitVersionHash","value":"#{GitHub.CommitId}","type":"PLAINTEXT"}]'
               OutputArtifacts:
                 - Name: Packaged
               InputArtifacts:
@@ -233,7 +231,6 @@ Resources:
               Configuration:
                 ProjectName: !Ref CodeBuildStaging
                 PrimarySource: Source
-                EnvironmentVariables: '[{"name":"GitVersionHash","value":"#{GitHub.CommitId}","type":"PLAINTEXT"}]'
               OutputArtifacts:
                 - Name: Tests
               InputArtifacts:
@@ -516,7 +513,6 @@ Resources:
                   - "codebuild:BatchGetBuilds"
                   - "codebuild:StartBuild"
                 Resource:
-                  - !Sub ${GitMetadata.Arn}
                   - !Sub ${CodeBuildApp.Arn}
                   - !Sub ${CodeBuildPackage.Arn}
                   - !Sub ${CodeBuildStaging.Arn}

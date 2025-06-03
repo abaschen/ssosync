@@ -4,12 +4,14 @@ env:
   variables:
     GOROOT:
     GOPATH:
+    GOPROXY: direct
     GO111MODULE: "on"
     git-credential-helper: yes
     GOVERSION: go1.24.3
     VERSION_LINT: v2.1.6
     VERSION_MOCKERY: v3.3.2
     VERSION_GOREL: v2.9.0
+    GOREL_ARGS: --verbose
 
 phases:
   install:
@@ -22,12 +24,13 @@ phases:
       - cd $BUILD_DIR
       - goenv install ${GOVERSION#go}
       - goenv global ${GOVERSION#go}
-      # Install linter
+      # Install tools
       - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b "$(goenv prefix)/bin/" v2.1.6
       - wget -qO- https://github.com/goreleaser/goreleaser/releases/download/${VERSION_GOREL}/goreleaser_Linux_x86_64.tar.gz | gunzip | tar xvf - -C "$(goenv prefix)/bin/"
       - wget -qO- https://github.com/vektra/mockery/releases/download/${VERSION_MOCKERY}/mockery_${VERSION_MOCKERY#v}_Linux_x86_64.tar.gz | gunzip | tar xvf - -C "$(goenv prefix)/bin/"
       - goenv rehash
       - golangci-lint --version
+      - goreleaser healthcheck
       - mockery version
 
   pre_build:
@@ -36,9 +39,8 @@ phases:
       - env
       - go version
       - '[ "$(go version | awk ''{print $3}'')" = "${GOVERSION}" ] || (echo "Wrong go version" && exit 1)'
-
-      # Fetch all dependencies
-      # - go env -w GOPROXY=direct
+      #- export GORELEASER_CURRENT_TAG=v1.2.3
+      #- export GORELEASER_PREVIOUS_TAG=v1.1.0
       - make install
 
       # Check the Go code for common problems with 'go vet'

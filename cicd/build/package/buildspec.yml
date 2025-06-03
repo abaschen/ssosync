@@ -40,9 +40,11 @@ phases:
 
   post_build:
     commands:
-      - export GitTag=`git describe --tags --abbrev=0`
-      # Create parameters
-      - export AppVersion="${GitTag#v}-${GitVersionHash}"
+      # Create parameters from metadata
+      # exemple: {"project_name":"ssosync","tag":"v2.2.10","previous_tag":"v2.2.9","version":"2.2.10-SNAPSHOT-2adae4a","commit":"2adae4a3c30d124cac2116193c2fe8f88c01ff2f","date":"2025-06-02T13:49:30.20931974Z","runtime":{"goos":"linux","goarch":"arm64"}}
+      - export AppTag=$(cat ./dist/metadata.json | jq '.tag' -r)
+      - export AppVersion=$(cat ./dist/metadata.json | jq '.version' -r)
+      - export AppCommit=$(cat ./dist/metadata.json | jq '.commit' -r)
       - echo "AppVersion=${AppVersion}"
       - aws ssm put-parameter --name "/SSOSync/Staging/Version" --value ${AppVersion} --type String --overwrite
 
