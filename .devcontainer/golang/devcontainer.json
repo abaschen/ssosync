@@ -6,8 +6,7 @@
     "ghcr.io/devcontainers/features/aws-cli": {},
     //"ghcr.io/devcontainers-extra/features/pnpm": {}
     "ghcr.io/customink/codespaces-features/sam-cli": {},
-    "ghcr.io/brokeyourbike/devcontainer-features/mockery-go:0": {},
-    "ghcr.io/devcontainers-extra/features/upx:1": {}
+    "ghcr.io/brokeyourbike/devcontainer-features/mockery-go:0": {}
   },
   "customizations": {
     "vscode": {
