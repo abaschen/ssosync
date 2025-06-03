@@ -190,6 +190,7 @@ Resources:
         - Name: App
           Actions:
             - Name: GoLang-Build
+              Namespace: Build
               InputArtifacts:
                 - Name: Source
               ActionTypeId:
@@ -213,6 +214,7 @@ Resources:
               Configuration:
                 ProjectName: !Ref CodeBuildPackage
                 PrimarySource: Source
+                EnvironmentVariables: '[{"name":"AppVersion","value":"#{Build.AppVersion}","type":"PLAINTEXT"},{"name":"AppCommit","value":"#{Build.AppCommit}","type":"PLAINTEXT"},{"name":"AppTag","value":"#{Build.AppTag}","type":"PLAINTEXT"}]'
               OutputArtifacts:
                 - Name: Packaged
               InputArtifacts:
