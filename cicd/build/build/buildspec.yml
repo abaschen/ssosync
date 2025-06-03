@@ -34,7 +34,6 @@ phases:
       - wget -qO- https://github.com/vektra/mockery/releases/download/${VERSION_MOCKERY}/mockery_${VERSION_MOCKERY#v}_Linux_x86_64.tar.gz | gunzip | tar xvf - -C "$(goenv prefix)/bin/"
       - goenv rehash
       - golangci-lint --version
-      - goreleaser healthcheck
       - mockery version
 
   pre_build:
