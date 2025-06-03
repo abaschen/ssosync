@@ -63,10 +63,10 @@ phases:
       - |
         if expr "${GitReleaseCommit}" : "${CODEBUILD_RESOLVED_SOURCE_VERSION}" >/dev/null; then
           export IsRelease=true
-          export GOREL_ARG=--verbose
+          export GOREL_ARGS=--verbose
         else
           export IsRelease=false
-          export GOREL_ARG="--snapshot --verbose"
+          export GOREL_ARGS="--snapshot --verbose"
         fi
       # Make go-build
       - make build
