@@ -74,7 +74,7 @@ phases:
     commands:
       # Check we've packaged something useful
       - ver=$(./dist/ssosync_linux_amd64_v1/ssosync --version)
-      - export AppVersion=${ver%,}
+      - export AppVersion=${ver%%,*}
       - echo AppVersion=$AppVersion built
 cache:
   paths:
