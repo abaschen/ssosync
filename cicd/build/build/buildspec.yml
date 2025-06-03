@@ -12,7 +12,11 @@ env:
     VERSION_MOCKERY: v3.3.2
     VERSION_GOREL: v2.9.0
     GOREL_ARGS: --verbose
-
+  exported-variables:
+    - AppVersion
+    - AppTag
+    - AppCommit
+    - IsRelease
 phases:
   install:
     commands:
@@ -53,14 +57,26 @@ phases:
     commands:
       # Make clean
       - make clean
-
+      - export AppTag=`git describe --tags --abbrev=0`
+      - export AppCommit=${CODEBUILD_RESOLVED_SOURCE_VERSION}
+      - GitReleaseCommit=`git rev-list -n 1 tags/${AppTag}`
+      - |
+        if expr "${GitReleaseCommit}" : "${CODEBUILD_RESOLVED_SOURCE_VERSION}" >/dev/null; then
+          export IsRelease=true
+          export GOREL_ARG=--verbose
+        else
+          export IsRelease=false
+          export GOREL_ARG="--snapshot --verbose"
+        fi
       # Make go-build
       - make build
 
   post_build:
     commands:
       # Check we've packaged something useful
-      - ./dist/ssosync_linux_amd64_v1/ssosync --version
+      - ver=$(./dist/ssosync_linux_amd64_v1/ssosync --version)
+      - export AppVersion=${ver%,}
+      - echo AppVersion=$AppVersion built
 cache:
   paths:
     - /root/.cache/go-build/**/*

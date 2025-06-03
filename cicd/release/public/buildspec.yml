@@ -20,8 +20,6 @@ phases:
 
       # Check we have the required file
       - ls packaged.yaml
-      - export GitTag=`git describe --tags --abbrev=0`
-      - export AppVersion="${GitTag#v}"
       - echo ${AppVersion}
 
   build:

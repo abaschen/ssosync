@@ -9,7 +9,6 @@ phases:
   build:
     commands:
       # Check whether this is a commit on the default branch with a release tag
-      - GitIsRelease=$(git describe --exact-match --tags HEAD 2>/dev/null || true)
       - |
         if expr "${GitIsRelease}" : "true" >/dev/null; then
           exit 0
