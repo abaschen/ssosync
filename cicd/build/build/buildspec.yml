@@ -68,7 +68,7 @@ phases:
           echo "Build is for snapshot"
         fi
       # Make go-build
-      - make GOREL_ARGS="${GOREL_ARGS}" build
+      - make GOREL_ARGS="${GOREL_ARGS} --id ssosync" build
 
   post_build:
     commands:
