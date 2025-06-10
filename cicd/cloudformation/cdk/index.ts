@@ -32,7 +32,7 @@ new SSOSyncPipelineStack(app, 'SSOSyncPipelineStack', {
   repoName: app.node.tryGetContext('ssosync/repoName') || 'ssosync',
   ownerName: app.node.tryGetContext('ssosync/ownerName') || 'awslabs',
   branchName: app.node.tryGetContext('ssosync/branchName') || 'master',
-  githubOAuthToken: app.node.getContext('ssosync/githubOAuthToken'),
+  githubConnectionArn: app.node.getContext('ssosync/githubConnectionArn'),
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: 'eu-west-1'

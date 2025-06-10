@@ -7,7 +7,6 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 import { Function } from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { SSOSync } from './imports.ts';
 
@@ -17,7 +16,7 @@ export interface SSOSyncPipelineStackProps extends cdk.StackProps {
   repoName: string;
   ownerName: string;
   branchName: string;
-  githubOAuthToken: string;
+  githubConnectionArn: string;
 }
 
 export class SSOSyncPipelineStack extends cdk.Stack {
@@ -177,24 +176,22 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       }
     });
 
-
-    const githubOAuthToken = new Secret(this, 'SourceGithubToken', {
-      secretName: 'ssosync/github/token',
-      secretStringValue: cdk.SecretValue.unsafePlainText(props.githubOAuthToken)
-    });
-
-    //actions
     const sourceOutput = new codepipeline.Artifact('Source');
-    console.log(`GitHub source action: ${props.ownerName}/${props.repoName}#${props.branchName}`);
-    const actionSource = new codepipeline_actions.GitHubSourceAction({
+
+
+    const actionSource = new codepipeline_actions.CodeStarConnectionsSourceAction({
       actionName: 'GitHub',
       owner: props.ownerName,
       repo: props.repoName,
       branch: props.branchName,
-      oauthToken: githubOAuthToken.secretValue,
       output: sourceOutput,
-      trigger: codepipeline_actions.GitHubTrigger.WEBHOOK
+      connectionArn: props.githubConnectionArn,
+      codeBuildCloneOutput: true
     });
+
+    //actions
+    console.log(`GitHub source action: ${props.ownerName}/${props.repoName}#${props.branchName}`)
+
 
     const buildOutput = new codepipeline.Artifact('Built');
     const actionBuild_goBuild = new codepipeline_actions.CodeBuildAction({
@@ -202,7 +199,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       project: buildApp,
       input: sourceOutput,
       runOrder: 1,
-      outputs: [buildOutput]
+      outputs: [buildOutput],
     });
 
     const packageOutput = new codepipeline.Artifact('Packaged');
@@ -282,7 +279,18 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       pipelineType: codepipeline.PipelineType.V2,
       artifactBucket: artifactBucket,
       crossAccountKeys: false,
-
+      triggers: [
+        {
+          providerType: codepipeline.ProviderType.CODE_STAR_SOURCE_CONNECTION,
+          gitConfiguration: {
+            sourceAction: actionSource,
+            pushFilter: [
+              { branchesIncludes: [props.branchName] },
+              { tagsIncludes: ["^v*"] }
+            ]
+          },
+        }
+      ],
       stages: [
         {
           stageName: 'Source',
@@ -340,6 +348,11 @@ export class SSOSyncPipelineStack extends cdk.Stack {
         resources: [SSOSync.imports.KeyForSecretsParam()]
       }));
 
+    buildApp.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['codepipeline:ListActionExecutions'],
+        resources: [pipeline.pipelineArn]
+      }));
 
 
   }
