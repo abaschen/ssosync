@@ -1,0 +1,23 @@
+{
+  "extends": [
+    "@tsconfig/node22/tsconfig.json",
+    "@tsconfig/node-ts/tsconfig.json"
+  ],
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "lib": [
+      "esnext"
+    ],
+    "types": [
+      "node"
+    ],
+  },
+  "exclude": [
+    "node_modules",
+    "cdk.out"
+  ]
+}

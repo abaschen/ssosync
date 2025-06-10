@@ -1,7 +1,14 @@
 version: 0.2
+env:
+  variables:
+    KeyForSecrets: alias/SSOSync
+  parameter-store:
+    SCIMEndpoint: /ssosync/aws/SCIMEndpointUrl
+    SSORegion: /ssosync/aws/Region
+    IdentityStoreID: /ssosync/aws/IdentityStoreId
+    WIFServiceAccountEmail: /ssosync/google/WIFServiceAccountEmail
 
 phases:
-
   build:
     commands:
       # Create parameters
@@ -25,7 +32,6 @@ phases:
         --argjson StackPolicy "{\"Statement\":[{\"Effect\": \"Allow\", \"NotAction\": \"Update:Delete\", \"Principal\": \"*\", \"Resource\": \"*\"}]}" \
         '$ARGS.named' > ./deploy/developer.json
       - cat ./deploy/developer.json
-
       # Update params with the values for this run for the management account
       - |
         jq -n \
@@ -33,7 +39,6 @@ phases:
         --argjson StackPolicy "{\"Statement\":[{\"Effect\": \"Allow\", \"NotAction\": \"Update:Delete\", \"Principal\": \"*\", \"Resource\": \"*\"}]}" \
         '$ARGS.named' > ./deploy/cli.json
       - cat ./deploy/cli.json
-
       # Update params with the values for this run for the delegated account
       - |
         jq -n \
@@ -41,7 +46,6 @@ phases:
         --argjson StackPolicy "{\"Statement\":[{\"Effect\": \"Allow\", \"NotAction\": \"Update:Delete\", \"Principal\": \"*\", \"Resource\": \"*\"}]}" \
         '$ARGS.named' > ./deploy/lambda.json
       - cat ./deploy/lambda.json
-
       # Update params with the values for this run for non-delegated account
       - |
         jq -n \
@@ -49,7 +53,6 @@ phases:
         --argjson StackPolicy "{\"Statement\":[{\"Effect\": \"Allow\", \"NotAction\": \"Update:Delete\", \"Principal\": \"*\", \"Resource\": \"*\"}]}" \
         '$ARGS.named' > ./deploy/codepipeline.json
       - cat ./deploy/codepipeline.json
-
 
 artifacts:
   files:

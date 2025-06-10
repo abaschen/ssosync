@@ -42,21 +42,9 @@ phases:
       - env
       - go version
       - '[ "$(go version | awk ''{print $3}'')" = "${GOVERSION}" ] || (echo "Wrong go version" && exit 1)'
-      #- export GORELEASER_CURRENT_TAG=v1.2.3
-      #- export GORELEASER_PREVIOUS_TAG=v1.1.0
-      - make install
-
-      # Check the Go code for common problems with 'go vet'
-      - make vet
-
-      # Run all tests included with our application
-      - make test
-
-  build:
-    commands:
       - export AppTag=`git describe --tags --abbrev=0`
       - export AppCommit=${CODEBUILD_RESOLVED_SOURCE_VERSION}
-      - GitReleaseCommit=`git rev-list -n 1 tags/${AppTag}`
+      - export GitReleaseCommit=`git rev-list -n 1 tags/${AppTag}`
       - |
         if expr "${GitReleaseCommit}" : "${CODEBUILD_RESOLVED_SOURCE_VERSION}" >/dev/null; then
           export IsRelease=true
@@ -66,7 +54,19 @@ phases:
           export GOREL_ARGS="--snapshot ${GOREL_ARGS}"
           echo "Build is for snapshot"
         fi
-      # Make go-build
+      #- export GORELEASER_CURRENT_TAG=v1.2.3
+      #- export GORELEASER_PREVIOUS_TAG=v1.1.0
+      - make config
+
+      # Check the Go code for common problems with 'go vet'
+      - make vet
+
+  build:
+    commands:
+      # Run all tests included with our application
+      - make test
+
+      # Make only the linux binaries, snapshot if not in tag
       - make GOREL_ARGS="${GOREL_ARGS} --id ssosync" build
 
   post_build:

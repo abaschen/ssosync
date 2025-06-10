@@ -26,8 +26,8 @@ clean:
 build-SSOSyncFunction: go-build
 	cp dist/ssosync_linux_arm64_v8.2/ssosync $(ARTIFACTS_DIR)/bootstrap
 
-.PHONY: install
-install:
+.PHONY: config
+config:
 	go mod download
 
 .PHONY: vet
