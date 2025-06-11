@@ -78,6 +78,13 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       }
     }));
 
+    const buildCacheBucket = new s3.Bucket(this, 'BuildCacheBucket', {
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
+      versioned: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     // Create CodeBuild Projects
     const buildApp = new codebuild.Project(this, 'CodeBuildApp', {
       projectName: 'SSOSync-Build-App',
@@ -97,8 +104,10 @@ export class SSOSyncPipelineStack extends cdk.Stack {
           logGroup: pipelineLogGroup,
           prefix: 'SSOSync-Build-App'
         }
-      }
+      },
+      cache: codebuild.Cache.bucket(buildCacheBucket)
     });
+    buildCacheBucket.grantReadWrite(buildApp);
 
     const buildPackage = new codebuild.Project(this, 'CodeBuildPackage', {
       projectName: 'SSOSync-Package',
@@ -121,6 +130,34 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       }
     });
 
+    //allow buildStaging to create a new application version
+    buildPackage.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['serverlessrepo:CreateApplicationVersion'],
+        resources: [`arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging`],
+      })
+    );
+    //allow buildStaging to update the application version
+    buildPackage.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['serverlessrepo:UpdateApplicationVersion'],
+        resources: [`arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging/*`],
+      })
+    );
+    //allow buildStaging to use sam package on artifact bucket
+    buildPackage.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:GetObject', 's3:PutObject'],
+        resources: [appBucket.arnForObjects("*"), appBucket.bucketArn],
+      })
+    );
+    //allow buildStaging to use ssm parameters
+    buildPackage.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['ssm:GetParameter', 'ssm:PutParameter'],
+        resources: [`arn:aws:ssm:${SSOSync.imports.SecretRegion()}:${this.account}:parameter/ssosync/Staging/*`],
+      })
+    );
 
 
     const sourceOutput = new codepipeline.Artifact('Source');
@@ -148,90 +185,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       runOrder: 1,
       outputs: [buildOutput],
     });
-    const samPackageRole = new iam.Role(this, 'SAMPackageRole', {
-      assumedBy: new iam.ServicePrincipal('codepipeline.amazonaws.com'),
-      inlinePolicies: {
 
-        'PipelineAccess': new iam.PolicyDocument({
-          statements: [
-            new iam.PolicyStatement({
-              actions: [
-                "s3:Abort*",
-                "s3:DeleteObject*",
-                "s3:GetBucket*",
-                "s3:GetObject*",
-                "s3:List*",
-                "s3:PutObject",
-                "s3:PutObjectLegalHold",
-                "s3:PutObjectRetention",
-                "s3:PutObjectTagging",
-                "s3:PutObjectVersionTagging"
-              ],
-              resources: [artifactBucket.arnForObjects('*'), artifactBucket.bucketArn],
-            }),
-            new iam.PolicyStatement({
-              actions: ["s3:PutObject",
-                "s3:GetObject",
-                "s3:GetObjectVersion",
-                "s3:GetBucketAcl",
-                "s3:GetBucketLocation"],
-              resources: [`${appBucket.bucketArn}/*`],
-            }),
-            new iam.PolicyStatement({
-              actions: [
-                "kms:Decrypt",
-                "kms:DescribeKey",
-                "kms:Encrypt",
-                "kms:GenerateDataKey*",
-                "kms:ReEncrypt*"
-              ],
-              resources: [artifactBucketKey.keyArn],
-            }),
-            new iam.PolicyStatement({
-              actions: [
-                "codebuild:CreateReportGroup",
-                "codebuild:CreateReport",
-                "codebuild:UpdateReport",
-                "codebuild:BatchPutTestCases",
-                "codebuild:BatchPutCodeCoverages"
-              ],
-              resources: [`arn:aws:codebuild:${this.region}:${this.account}:report-group/${buildPackage.projectName}-*`],
-            }),
-            new iam.PolicyStatement({
-              actions: [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-              ],
-              resources: [
-                `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/codebuild/${buildPackage.projectName}-*`,
-                `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/codebuild/${buildPackage.projectName}`
-              ],
-            }),
-          ]
-        }),
-        'SARAccess': new iam.PolicyDocument({
-          statements: [
-            new iam.PolicyStatement({
-              actions: ['serverlessrepo:CreateApplicationVersion', 'serverlessrepo:UpdateApplicationVersion'],
-              resources: ['*'],
-            }),
-          ]
-        }),
-        'SSMAccess': new iam.PolicyDocument({
-          statements: [
-            new iam.PolicyStatement({
-              actions: ['ssm:GetParameter'],
-              resources: [`arn:aws:ssm:${SSOSync.imports.SecretRegion()}:${this.account}:parameter/ssosync/*`],
-            }),
-            new iam.PolicyStatement({
-              actions: ['ssm:PutParameter'],
-              resources: [`arn:aws:ssm:${SSOSync.imports.SecretRegion()}:${this.account}:parameter/ssosync/Staging/*`],
-            }),
-          ]
-        })
-      }
-    });
     const packageOutput = new codepipeline.Artifact('Packaged');
     const actionBuild_SAMPackage = new codepipeline_actions.CodeBuildAction({
       actionName: 'SAM-Package-SAR-Stage',
@@ -239,7 +193,6 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       input: sourceOutput,
       extraInputs: [buildOutput],
       runOrder: 2,
-      role: samPackageRole,
       outputs: [packageOutput],
 
       environmentVariables: {
@@ -273,6 +226,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
         }
       }
     });
+
 
     const buildSmokeCLI = new codebuild.Project(this, 'CodeBuildSmokeCLI', {
       projectName: 'SSOSync-Smoke-CLI',
@@ -442,11 +396,12 @@ export class SSOSyncPipelineStack extends cdk.Stack {
         resources: [props.githubConnectionArn]
       }));
 
-    buildApp.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['codepipeline:ListActionExecutions'],
-        resources: [pipeline.pipelineArn]
-      }));
+
+    // buildApp.addToRolePolicy(
+    //   new iam.PolicyStatement({
+    //     actions: ['codepipeline:ListActionExecutions'],
+    //     resources: [pipeline.pipelineArn]
+    //   }));
 
 
   }
