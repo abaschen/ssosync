@@ -1,7 +1,6 @@
 version: 0.2
 
 env:
-  git-credential-helper: yes
   variables:
     GOROOT:
     GOPATH:
@@ -87,6 +86,7 @@ cache:
   paths:
     - /root/.cache/go-build/**/*
     - "/go/pkg/**/*"
+  key: $GOVERSION-$(codebuild-hash-files 'go.sum')
 artifacts:
   files:
     - dist/**/*

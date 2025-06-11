@@ -133,14 +133,15 @@ export class SSOSyncPipelineStack extends cdk.Stack {
     //allow buildStaging to create a new application version
     buildPackage.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['serverlessrepo:CreateApplicationVersion'],
+        actions: ['serverlessrepo:CreateApplication'],
         resources: [`arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging`],
       })
     );
+
     //allow buildStaging to update the application version
     buildPackage.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['serverlessrepo:UpdateApplicationVersion'],
+        actions: ['serverlessrepo:UpdateApplicationVersion', 'serverlessrepo:CreateApplicationVersion'],
         resources: [`arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging/*`],
       })
     );
