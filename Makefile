@@ -9,10 +9,12 @@ APP_NAME ?= ssosync
 GOREL_ARGS = 
 GOREL ?= goreleaser
 
-.PHONY: test
-test:
-	rm internal/mocks/* -f
+.PHONY: generate-mock
+generate-mock:
 	mockery
+
+.PHONY: test
+test: generate-mock
 	go test ./... -coverprofile=coverage.out
 
 .PHONY: go-build
@@ -21,7 +23,8 @@ go-build:
 
 .PHONY: clean
 clean:
-	rm -f $(OUTPUT) $(PACKAGED_TEMPLATE)
+	rm -f $(OUTPUT) $(PACKAGED_TEMPLATE) bootstrap coverage.out
+	rm -rf dist/ internal/mocks/*
 
 build-SSOSyncFunction: go-build
 	cp dist/ssosync_linux_arm64_v8.2/ssosync $(ARTIFACTS_DIR)/bootstrap
@@ -31,8 +34,7 @@ config:
 	go mod download
 
 .PHONY: vet
-vet:
-	mockery
+vet: generate-mock
 	golangci-lint run
 
 main: main.go

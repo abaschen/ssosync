@@ -196,8 +196,8 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       outputs: [packageOutput],
 
       environmentVariables: {
-        AppVersion: { value: actionBuild_goBuild.variable('AppVersion}') },
-        AppCommit: { value: actionBuild_goBuild.variable('AppCommit}') },
+        AppVersion: { value: actionBuild_goBuild.variable('AppVersion') },
+        AppCommit: { value: actionBuild_goBuild.variable('AppCommit') },
         AppTag: { value: actionBuild_goBuild.variable('AppTag') }
       }
     });
