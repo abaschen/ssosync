@@ -2,6 +2,7 @@ version: 0.2
 env:
   variables:
     KeyForSecrets: alias/SSOSync
+    SAM_CLI_TELEMETRY: 0
   parameter-store:
     SCIMEndpoint: /ssosync/aws/SCIMEndpointUrl
     SSORegion: /ssosync/aws/Region

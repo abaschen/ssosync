@@ -40,12 +40,12 @@ phases:
   pre_build:
     commands:
       # Print all environment variables (handy for AWS CodeBuild logs)
-      - codepipeline_name=${CODEBUILD_INITIATOR#codepipeline/}
-      - echo "CodePipeline name is $codepipeline_name"
-      - codepipeline_execution=$(aws codepipeline list-action-executions --pipeline-name $codepipeline_name)
-      - echo $codepipeline_execution
-      - commit_message=$(echo $codepipeline_execution | jq -r --arg commitId "$CODEBUILD_RESOLVED_SOURCE_VERSION" '.actionExecutionDetails[] | select(.output.outputVariables.CommitId == $commitId) | .output.outputVariables.CommitMessage')
-      - echo "Commit Message is $commit_message"
+      # - codepipeline_name=${CODEBUILD_INITIATOR#codepipeline/}
+      # - echo "CodePipeline name is $codepipeline_name"
+      # - codepipeline_execution=$(aws codepipeline list-action-executions --pipeline-name $codepipeline_name)
+      # - echo $codepipeline_execution
+      # - commit_message=$(echo $codepipeline_execution | jq -r --arg commitId "$CODEBUILD_RESOLVED_SOURCE_VERSION" '.actionExecutionDetails[] | select(.output.outputVariables.CommitId == $commitId) | .output.outputVariables.CommitMessage')
+      # - echo "Commit Message is $commit_message"
 
       - env
       - go version

@@ -121,6 +121,134 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       }
     });
 
+
+
+    const sourceOutput = new codepipeline.Artifact('Source');
+
+
+    const actionSource = new codepipeline_actions.CodeStarConnectionsSourceAction({
+      actionName: 'GitHub',
+      owner: props.ownerName,
+      repo: props.repoName,
+      branch: props.branchName,
+      output: sourceOutput,
+      connectionArn: props.githubConnectionArn,
+      codeBuildCloneOutput: true
+    });
+
+    //actions
+    console.log(`GitHub source action: ${props.ownerName}/${props.repoName}#${props.branchName}`)
+
+
+    const buildOutput = new codepipeline.Artifact('Built');
+    const actionBuild_goBuild = new codepipeline_actions.CodeBuildAction({
+      actionName: 'GoLang-Build',
+      project: buildApp,
+      input: sourceOutput,
+      runOrder: 1,
+      outputs: [buildOutput],
+    });
+    const samPackageRole = new iam.Role(this, 'SAMPackageRole', {
+      assumedBy: new iam.ServicePrincipal('codepipeline.amazonaws.com'),
+      inlinePolicies: {
+
+        'PipelineAccess': new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: [
+                "s3:Abort*",
+                "s3:DeleteObject*",
+                "s3:GetBucket*",
+                "s3:GetObject*",
+                "s3:List*",
+                "s3:PutObject",
+                "s3:PutObjectLegalHold",
+                "s3:PutObjectRetention",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging"
+              ],
+              resources: [artifactBucket.arnForObjects('*'), artifactBucket.bucketArn],
+            }),
+            new iam.PolicyStatement({
+              actions: ["s3:PutObject",
+                "s3:GetObject",
+                "s3:GetObjectVersion",
+                "s3:GetBucketAcl",
+                "s3:GetBucketLocation"],
+              resources: [`${appBucket.bucketArn}/*`],
+            }),
+            new iam.PolicyStatement({
+              actions: [
+                "kms:Decrypt",
+                "kms:DescribeKey",
+                "kms:Encrypt",
+                "kms:GenerateDataKey*",
+                "kms:ReEncrypt*"
+              ],
+              resources: [artifactBucketKey.keyArn],
+            }),
+            new iam.PolicyStatement({
+              actions: [
+                "codebuild:CreateReportGroup",
+                "codebuild:CreateReport",
+                "codebuild:UpdateReport",
+                "codebuild:BatchPutTestCases",
+                "codebuild:BatchPutCodeCoverages"
+              ],
+              resources: [`arn:aws:codebuild:${this.region}:${this.account}:report-group/${buildPackage.projectName}-*`],
+            }),
+            new iam.PolicyStatement({
+              actions: [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              resources: [
+                `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/codebuild/${buildPackage.projectName}-*`,
+                `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/codebuild/${buildPackage.projectName}`
+              ],
+            }),
+          ]
+        }),
+        'SARAccess': new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: ['serverlessrepo:CreateApplicationVersion', 'serverlessrepo:UpdateApplicationVersion'],
+              resources: ['*'],
+            }),
+          ]
+        }),
+        'SSMAccess': new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: ['ssm:GetParameter'],
+              resources: [`arn:aws:ssm:${SSOSync.imports.SecretRegion()}:${this.account}:parameter/ssosync/*`],
+            }),
+            new iam.PolicyStatement({
+              actions: ['ssm:PutParameter'],
+              resources: [`arn:aws:ssm:${SSOSync.imports.SecretRegion()}:${this.account}:parameter/ssosync/Staging/*`],
+            }),
+          ]
+        })
+      }
+    });
+    const packageOutput = new codepipeline.Artifact('Packaged');
+    const actionBuild_SAMPackage = new codepipeline_actions.CodeBuildAction({
+      actionName: 'SAM-Package-SAR-Stage',
+      project: buildPackage,
+      input: sourceOutput,
+      extraInputs: [buildOutput],
+      runOrder: 2,
+      role: samPackageRole,
+      outputs: [packageOutput],
+
+      environmentVariables: {
+        AppVersion: { value: actionBuild_goBuild.variable('AppVersion}') },
+        AppCommit: { value: actionBuild_goBuild.variable('AppCommit}') },
+        AppTag: { value: actionBuild_goBuild.variable('AppTag') }
+      }
+    });
+
     const codebuildStagingProjectName = 'SSOSync-Staging';
 
     const buildStaging = new codebuild.Project(this, 'CodeBuildStaging', {
@@ -133,8 +261,10 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       },
 
       environmentVariables: {
-        ARTIFACT_S3_BUCKET: { value: artifactBucket.bucketName },
         AppArn: { value: `arn:aws:serverlessrepo:\${this.region}:\${this.account}:applications/SSOSync-Staging` },
+        AppVersion: { value: actionBuild_goBuild.variable('AppVersion}') },
+        AppCommit: { value: actionBuild_goBuild.variable('AppCommit}') },
+        AppTag: { value: actionBuild_goBuild.variable('AppTag') }
       },
       logging: {
         cloudWatch: {
@@ -175,48 +305,6 @@ export class SSOSyncPipelineStack extends cdk.Stack {
         }
       }
     });
-
-    const sourceOutput = new codepipeline.Artifact('Source');
-
-
-    const actionSource = new codepipeline_actions.CodeStarConnectionsSourceAction({
-      actionName: 'GitHub',
-      owner: props.ownerName,
-      repo: props.repoName,
-      branch: props.branchName,
-      output: sourceOutput,
-      connectionArn: props.githubConnectionArn,
-      codeBuildCloneOutput: true
-    });
-
-    //actions
-    console.log(`GitHub source action: ${props.ownerName}/${props.repoName}#${props.branchName}`)
-
-
-    const buildOutput = new codepipeline.Artifact('Built');
-    const actionBuild_goBuild = new codepipeline_actions.CodeBuildAction({
-      actionName: 'GoLang-Build',
-      project: buildApp,
-      input: sourceOutput,
-      runOrder: 1,
-      outputs: [buildOutput],
-    });
-
-    const packageOutput = new codepipeline.Artifact('Packaged');
-    const actionBuild_SAMPackage = new codepipeline_actions.CodeBuildAction({
-      actionName: 'SAM-Package-SAR-Stage',
-      project: buildPackage,
-      input: buildOutput,
-      runOrder: 2,
-      outputs: [packageOutput],
-
-      environmentVariables: {
-        AppVersion: { value: actionBuild_goBuild.variable('AppVersion}') },
-        AppCommit: { value: actionBuild_goBuild.variable('AppCommit}') },
-        AppTag: { value: actionBuild_goBuild.variable('AppTag') }
-      }
-    });
-
 
     // Deploy Stage
     const testsOutput = new codepipeline.Artifact('Tests');
@@ -346,6 +434,12 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       new iam.PolicyStatement({
         actions: ['kms:Decrypt', 'kms:DescribeKey'],
         resources: [SSOSync.imports.KeyForSecretsParam()]
+      }));
+
+    pipeline.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["codestar-connections:UseConnection"],
+        resources: [props.githubConnectionArn]
       }));
 
     buildApp.addToRolePolicy(
