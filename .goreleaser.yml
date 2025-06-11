@@ -86,3 +86,5 @@ archives:
       - goos: windows
         formats:
           - zip
+snapshot:
+  version_template: "{{ incpatch .Version }}-SNAPSHOT"
