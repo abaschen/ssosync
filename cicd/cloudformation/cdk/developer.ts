@@ -134,7 +134,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
     buildPackage.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['serverlessrepo:CreateApplication'],
-        resources: [`arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging`],
+        resources: [`arn:aws:serverlessrepo:${this.region}:${this.account}:applications/*`],
       })
     );
 
@@ -142,7 +142,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
     buildPackage.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['serverlessrepo:UpdateApplicationVersion', 'serverlessrepo:CreateApplicationVersion'],
-        resources: [`arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging/*`],
+        resources: [`arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging/*`, `arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging`],
       })
     );
     //allow buildStaging to use sam package on artifact bucket
@@ -155,8 +155,8 @@ export class SSOSyncPipelineStack extends cdk.Stack {
     //allow buildStaging to use ssm parameters
     buildPackage.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['ssm:GetParameter', 'ssm:PutParameter'],
-        resources: [`arn:aws:ssm:${SSOSync.imports.SecretRegion()}:${this.account}:parameter/ssosync/Staging/*`],
+        actions: ['ssm:Get*', 'ssm:PutParameter'],
+        resources: [`arn:aws:ssm:${SSOSync.imports.SecretRegion()}:${this.account}:parameter/SSOSync/Staging/*`],
       })
     );
 
@@ -211,14 +211,15 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       buildSpec: codebuild.BuildSpec.fromAsset(`${cicdFolder}/account_execution/staging/buildspec.yml`),
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
-        computeType: codebuild.ComputeType.SMALL,
+        computeType: codebuild.ComputeType.SMALL
       },
 
       environmentVariables: {
         AppArn: { value: `arn:aws:serverlessrepo:\${this.region}:\${this.account}:applications/SSOSync-Staging` },
         AppVersion: { value: actionBuild_goBuild.variable('AppVersion}') },
         AppCommit: { value: actionBuild_goBuild.variable('AppCommit}') },
-        AppTag: { value: actionBuild_goBuild.variable('AppTag') }
+        AppTag: { value: actionBuild_goBuild.variable('AppTag') },
+        SSORegion: { value: SSOSync.imports.SecretRegion() },
       },
       logging: {
         cloudWatch: {
@@ -227,7 +228,12 @@ export class SSOSyncPipelineStack extends cdk.Stack {
         }
       }
     });
-
+    buildStaging.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['ssm:Get*'],
+        resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/SSOSync/*`],
+      })
+    );
 
     const buildSmokeCLI = new codebuild.Project(this, 'CodeBuildSmokeCLI', {
       projectName: 'SSOSync-Smoke-CLI',
@@ -375,8 +381,8 @@ export class SSOSyncPipelineStack extends cdk.Stack {
 
     pipeline.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['ssm:GetParameters'],
-        resources: [`arn:aws:ssm:${SSOSync.imports.SecretRegion()}:${this.account}:parameter/ssosync/*`]
+        actions: ['ssm:Get*'],
+        resources: [`arn:aws:ssm:${SSOSync.imports.SecretRegion()}:${this.account}:parameter/SSOSync/*`]
       }));
     //grant read for secrets
     pipeline.addToRolePolicy(

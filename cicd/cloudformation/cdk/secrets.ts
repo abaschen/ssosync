@@ -117,7 +117,7 @@ export class SSOSyncSecretsStack extends cdk.Stack {
       }
 
       const paramWIFEmail = new StringParameter(this, 'SecretWIFServiceAccountEmail', {
-        parameterName: '/ssosync/google/WIFServiceAccountEmail',
+        parameterName: '/SSOSync/google/WIFServiceAccountEmail',
         stringValue: props.wifServiceAccountEmail,
       });
       grantRead(paramWIFEmail);
@@ -137,7 +137,7 @@ export class SSOSyncSecretsStack extends cdk.Stack {
 
     // Create SCIM secrets
     const paramSCIMEndpoint = new StringParameter(this, 'SecretSCIMEndpoint', {
-      parameterName: '/ssosync/aws/SCIMEndpointUrl',
+      parameterName: '/SSOSync/aws/SCIMEndpointUrl',
       stringValue: props.scimEndpointUrl,
     });
     grantRead(paramSCIMEndpoint);
@@ -153,11 +153,16 @@ export class SSOSyncSecretsStack extends cdk.Stack {
 
 
     const paramIdentityStore = new StringParameter(this, 'SecretIdentityStoreID', {
-      parameterName: '/ssosync/aws/IdentityStoreId',
+      parameterName: '/SSOSync/aws/IdentityStoreId',
       stringValue: props.identityStoreId,
     });
     grantRead(paramIdentityStore);
 
+    const secretRegion = new StringParameter(this, 'SecretRegion', {
+      parameterName: '/SSOSync/aws/Region',
+      stringValue: this.region,
+    });
+    grantRead(secretRegion);
     // output these
     /*
     secretSCIMEndpoint.parameterArn

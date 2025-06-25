@@ -18,7 +18,6 @@ Metadata:
       - Label:
           default: Google Workspace Credentials
         Parameters:
-          - GoogleAdminEmail
           - GoogleCredentials
       - Label:
           default: Sync Configuration
@@ -133,14 +132,6 @@ Parameters:
       Credentials to log into Google (content of credentials.json)
     Default: ""
     AllowedPattern: '(?!.*\s)|(\{(\s)*(".*")(\s)*:(\s)*(".*")(\s)*\})'
-    NoEcho: true
-
-  GoogleAdminEmail:
-    Type: String
-    Description: |
-      Google Admin email
-    Default: ""
-    AllowedPattern: '(?!.*\s)|(([a-zA-Z0-9.+=_-]{0,61})@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*)'
     NoEcho: true
 
   SCIMEndpointUrl:
@@ -323,11 +314,6 @@ Rules:
         AssertDescription: "The contents of the Credentials.json is required for this deployment type."
       - Assert: !Not
           - !Equals
-            - !Ref GoogleAdminEmail
-            - ""
-        AssertDescription: "The email address of a directory admin is required for this deployment type."
-      - Assert: !Not
-          - !Equals
             - !Ref SCIMEndpointUrl
             - ""
         AssertDescription: "The SCIM url from IAM Identity Center is required for this deployment type."
@@ -386,10 +372,6 @@ Rules:
           - ""
         AssertDescription: "A value for GoogleCredentials is not required for this deployment type."
       - Assert: !Equals
-          - !Ref GoogleAdminEmail
-          - ""
-        AssertDescription: "A value for GoogleAdminEmail is not required for this deployment type."
-      - Assert: !Equals
           - !Ref SCIMEndpointUrl
           - ""
         AssertDescription: "A value for SCIMEndpointUrl is not required for this deployment type."
@@ -405,11 +387,6 @@ Rules:
           - !Ref IdentityStoreID
           - ""
         AssertDescription: "A value for IdentityStoreID is not required for this deployment type."
-      - Assert: !Not
-          - !Equals
-            - !Ref CrossStackConfig
-            - ""
-        AssertDescription: "AppConfig copied from the outputs of the secrets stack is required for this deployment type."
 
 Resources:
   SSOSyncRoleLocal:
@@ -443,11 +420,6 @@ Resources:
                       CreateSecrets,
                       !Ref SecretGoogleCredentials,
                       !Select [0, !Split [",", !Ref CrossStackConfig]],
-                    ]
-                  - !If [
-                      CreateSecrets,
-                      !Ref SecretGoogleAdminEmail,
-                      !Select [1, !Split [",", !Ref CrossStackConfig]],
                     ]
                   - !If [
                       CreateSecrets,
@@ -689,29 +661,6 @@ Resources:
               - secretsmanager:GetSecretValue
             Resource: "*"
 
-  SecretGoogleAdminEmail:
-    Type: "AWS::SecretsManager::Secret"
-    Condition: CreateSecrets
-    Properties:
-      Name: SSOSyncGoogleAdminEmail
-      SecretString: !Ref GoogleAdminEmail
-      KmsKeyId: !If [CreateKey, !Ref KeyAlias, alias/aws/secretsmanager]
-
-  SecretGoogleAdminEmailPolicy:
-    Type: AWS::SecretsManager::ResourcePolicy
-    Condition: CreateKey
-    Properties:
-      SecretId: !Ref SecretGoogleAdminEmail
-      ResourcePolicy:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              AWS: !Sub arn:aws:iam::${CrossStackConfig}:root
-            Action:
-              - secretsmanager:GetSecretValue
-            Resource: "*"
-
   SecretSCIMEndpoint: # This can be moved to custom provider
     Type: "AWS::SecretsManager::Secret"
     Condition: CreateSecrets
@@ -815,13 +764,13 @@ Outputs:
   AppConfigLocal:
     Condition: OutputSecrets
     Description: "The Comma Separated list of secrets ARNs to copy and paste into the CrossStackConfig field of the App only stack."
-    Value: !Sub ${SecretGoogleCredentials},${SecretGoogleAdminEmail},${SecretSCIMEndpoint},${SecretSCIMAccessToken},${SecretRegion},${SecretIdentityStoreID}
+    Value: !Sub ${SecretGoogleCredentials},${SecretSCIMEndpoint},${SecretSCIMAccessToken},${SecretRegion},${SecretIdentityStoreID}
     Export:
       Name: AppConfig
 
   AppConfigRemote:
     Condition: CreateKey
     Description: "The Comma Separated list of Secrets and KMS Key ARNs to copy and paste into the CrossStackConfig field of the app for cross-account stack."
-    Value: !Sub ${SecretGoogleCredentials},${SecretGoogleAdminEmail},${SecretSCIMEndpoint},${SecretSCIMAccessToken},${SecretRegion},${SecretIdentityStoreID},arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${KeyForSecrets}
+    Value: !Sub ${SecretGoogleCredentials},${SecretSCIMEndpoint},${SecretSCIMAccessToken},${SecretRegion},${SecretIdentityStoreID},arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${KeyForSecrets}
     Export:
       Name: AppConfig
