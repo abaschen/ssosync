@@ -282,9 +282,18 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       actionName: 'Deploy',
       runOrder: 2,
       stackName: 'TestAccountExecution',
+      replaceOnFailure: true,
       templatePath: testsOutput.atPath('deploy/stack.yml'),
       adminPermissions: true,
+      cfnCapabilities: [
+        cdk.CfnCapabilities.AUTO_EXPAND,
+        cdk.CfnCapabilities.ANONYMOUS_IAM,
+        cdk.CfnCapabilities.NAMED_IAM
+      ],
       parameterOverrides: {
+        AppArn: `arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging`,
+        AppVersionParam: ParameterNames.AppVersionParam,
+
         GoogleServiceCredentialsSecret: SecretNames.GoogleServiceCredentialsSecret,
         SCIMAccessTokenSecret: SecretNames.SCIMAccessTokenSecret,
         SCIMEndpointUrlParam: ParameterNames.SCIMEndpointUrlParam,

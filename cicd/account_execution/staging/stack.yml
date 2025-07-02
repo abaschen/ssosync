@@ -10,9 +10,9 @@ Parameters:
     Description: The candidate release in the SAR
     Default: "arn:aws:serverlessrepo:<AWS::Region>:<AccountId>:applications/<ApplicationName>"
     Type: String
-  AppVersion:
+  AppVersionParam:
     Description: The version of this build in SAR
-    Default: "v1.0.0-rc.10"
+    Default: "/SSOSync/Staging/Version"
     Type: String
   GoogleServiceCredentialsSecret:
     Type: String
@@ -38,7 +38,11 @@ Resources:
     Properties:
       Location:
         ApplicationId: !Ref AppArn
-        SemanticVersion: !Ref AppVersion
+        SemanticVersion: !Join
+          - ""
+          - - "{{resolve:ssm:"
+            - !Ref AppVersionParam
+            - "}}"
       Parameters:
         FunctionName: SSOSyncFunction
         GoogleCredentials: !Join

@@ -10,6 +10,7 @@ export const ParameterNames = {
     SCIMEndpointUrlParam: '/SSOSync/aws/SCIMEndpointUrl',
     IdentityStoreIdParam: '/SSOSync/aws/IdentityStoreId',
     SecretRegionParam: '/SSOSync/aws/Region',
+    AppVersionParam: '/SSOSync/Staging/Version'
 }
 export const Keys = {
     GoogleServiceCredentialsSecret: 'SSOSync:GoogleServiceCredentials',
