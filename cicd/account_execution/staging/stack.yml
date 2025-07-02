@@ -14,14 +14,14 @@ Parameters:
     Description: The version of this build in SAR
     Default: "v1.0.0-rc.10"
     Type: String
-  GoogleCredentialsArn:
+  GoogleServiceCredentialsSecret:
     Type: String
   SCIMEndpointUrlParam:
     Type: String
     Default: /SSOSync/aws/SCIMEndpointUrl
-  SCIMAccessTokenArn:
+  SCIMAccessTokenSecret:
     Type: String
-  RegionParam:
+  SecretRegionParam:
     Type: String
     Default: /SSOSync/aws/Region
   IdentityStoreIdParam:
@@ -44,7 +44,7 @@ Resources:
         GoogleCredentials: !Join
           - ""
           - - "{{resolve:secretsmanager:"
-            - !Ref GoogleCredentialsArn
+            - !Ref GoogleServiceCredentialsSecret
             - "}}"
         SCIMEndpointUrl: !Join
           - ""
@@ -54,12 +54,12 @@ Resources:
         SCIMEndpointAccessToken: !Join
           - ""
           - - "{{resolve:secretsmanager:"
-            - !Ref SCIMAccessTokenArn
+            - !Ref SCIMAccessTokenSecret
             - "}}"
         Region: !Join
           - ""
           - - "{{resolve:ssm:"
-            - !Ref RegionParam
+            - !Ref SecretRegionParam
             - "}}"
         IdentityStoreID: !Join
           - ""

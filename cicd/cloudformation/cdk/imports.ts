@@ -1,6 +1,16 @@
 import { CfnOutput, Fn } from "aws-cdk-lib"
 import { Construct } from "constructs"
-
+export const SecretNames = {
+    GoogleServiceCredentialsSecret: 'ssosync/google/ServiceAccountCredentials',
+    WIFCredsSecret: 'ssosync/google/WIFCredentials',
+    SCIMAccessTokenSecret: 'ssosync/aws/SCIMAccessToken',
+}
+export const ParameterNames = {
+    WIFEmailParam: '/SSOSync/google/WIFServiceAccountEmail',
+    SCIMEndpointUrlParam: '/SSOSync/aws/SCIMEndpointUrl',
+    IdentityStoreIdParam: '/SSOSync/aws/IdentityStoreId',
+    SecretRegionParam: '/SSOSync/aws/Region',
+}
 export const Keys = {
     GoogleServiceCredentialsSecret: 'SSOSync:GoogleServiceCredentials',
     WIFCredsSecret: 'SSOSync:WIFCredentials',

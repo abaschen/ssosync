@@ -5,6 +5,7 @@ import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 import { readFileSync } from 'node:fs';
 import { SSOSync } from './imports';
+import { ParameterNames, SecretNames } from './imports.ts';
 
 //import google secrets from json
 
@@ -100,7 +101,7 @@ export class SSOSyncSecretsStack extends cdk.Stack {
       const secretGoogleCreds = new secretsmanager.Secret(this, 'GoogleSSOSyncServiceAccountSecret', {
         encryptionKey: keyForSecrets,
         removalPolicy: cdk.RemovalPolicy.RETAIN,
-        secretName: 'ssosync/google/ServiceAccountCredentials',
+        secretName: SecretNames.GoogleServiceCredentialsSecret,
         secretObjectValue: Object.fromEntries(
           Object.entries(credFileJson).map(([key, value]) => [key, cdk.SecretValue.unsafePlainText(value)])
         ),
@@ -117,13 +118,13 @@ export class SSOSyncSecretsStack extends cdk.Stack {
       }
 
       const paramWIFEmail = new StringParameter(this, 'SecretWIFServiceAccountEmail', {
-        parameterName: '/SSOSync/google/WIFServiceAccountEmail',
+        parameterName: ParameterNames.WIFEmailParam,
         stringValue: props.wifServiceAccountEmail,
       });
       grantRead(paramWIFEmail);
 
       const secretWIFCreds = new secretsmanager.Secret(this, 'SecretWIFClientLibraryCreds', {
-        secretName: 'ssosync/google/WIFCredentials',
+        secretName: SecretNames.WIFCredsSecret,
         secretStringValue: cdk.SecretValue.unsafePlainText(props.wifClientLibraryConfig),
         encryptionKey: keyForSecrets,
         removalPolicy: cdk.RemovalPolicy.RETAIN,
@@ -137,13 +138,13 @@ export class SSOSyncSecretsStack extends cdk.Stack {
 
     // Create SCIM secrets
     const paramSCIMEndpoint = new StringParameter(this, 'SecretSCIMEndpoint', {
-      parameterName: '/SSOSync/aws/SCIMEndpointUrl',
+      parameterName: ParameterNames.SCIMEndpointUrlParam,
       stringValue: props.scimEndpointUrl,
     });
     grantRead(paramSCIMEndpoint);
 
     const secretSCIMToken = new secretsmanager.Secret(this, 'SecretSCIMAccessToken', {
-      secretName: 'ssosync/aws/SCIMAccessToken',
+      secretName: SecretNames.SCIMAccessTokenSecret,
       secretStringValue: cdk.SecretValue.unsafePlainText(props.scimEndpointAccessToken),
       encryptionKey: keyForSecrets,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
@@ -153,13 +154,13 @@ export class SSOSyncSecretsStack extends cdk.Stack {
 
 
     const paramIdentityStore = new StringParameter(this, 'SecretIdentityStoreID', {
-      parameterName: '/SSOSync/aws/IdentityStoreId',
+      parameterName: ParameterNames.IdentityStoreIdParam,
       stringValue: props.identityStoreId,
     });
     grantRead(paramIdentityStore);
 
     const secretRegion = new StringParameter(this, 'SecretRegion', {
-      parameterName: '/SSOSync/aws/Region',
+      parameterName: ParameterNames.SecretRegionParam,
       stringValue: this.region,
     });
     grantRead(secretRegion);

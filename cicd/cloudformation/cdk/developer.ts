@@ -8,7 +8,7 @@ import { Function } from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
-import { SSOSync } from './imports.ts';
+import { ParameterNames, SSOSync, SecretNames } from './imports.ts';
 
 const cicdFolder = '../../../cicd'
 
@@ -141,7 +141,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
     //allow buildStaging to update the application version
     buildPackage.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['serverlessrepo:UpdateApplicationVersion', 'serverlessrepo:CreateApplicationVersion'],
+        actions: ['serverlessrepo:UpdateApplicationVersion', 'serverlessrepo:CreateApplicationVersion', 'serverlessrepo:UpdateApplication'],
         resources: [`arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging/*`, `arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging`],
       })
     );
@@ -285,7 +285,11 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       templatePath: testsOutput.atPath('deploy/stack.yml'),
       adminPermissions: true,
       parameterOverrides: {
-        // Add parameters if needed
+        GoogleServiceCredentialsSecret: SecretNames.GoogleServiceCredentialsSecret,
+        SCIMAccessTokenSecret: SecretNames.SCIMAccessTokenSecret,
+        SCIMEndpointUrlParam: ParameterNames.SCIMEndpointUrlParam,
+        IdentityStoreIdParam: ParameterNames.IdentityStoreIdParam,
+        SecretRegionParam: ParameterNames.SecretRegionParam
       },
       extraInputs: [testsOutput],
     })
