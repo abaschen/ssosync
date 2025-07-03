@@ -10,7 +10,7 @@ Parameters:
     Description: The candidate release in the SAR
     #Default: "arn:aws:serverlessrepo:<AWS::Region>:<AccountId>:applications/<ApplicationName>"
     Type: String
-  AppVersionParam:
+  AppVersion:
     Description: The version of this build in SAR
     #Default: "/SSOSync/Staging/Version"
     Type: String
