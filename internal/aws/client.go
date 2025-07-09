@@ -118,6 +118,13 @@ func (c *client) prepareRequest(method string, path string, body any) (req *http
 	return req, nil
 }
 
+func close(body io.ReadCloser) {
+	err := body.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func (c *client) get(path string, beforeSend QueryTransformer) (response []byte, err error) {
 	log.Debug("Sending request to ", path)
 	// Validate URL
@@ -139,7 +146,8 @@ func (c *client) get(path string, beforeSend QueryTransformer) (response []byte,
 	if resp.Body == nil {
 		return nil, &ErrHTTPNotOK{resp.StatusCode}
 	}
-	defer resp.Body.Close()
+	defer close(resp.Body)
+
 	response, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return
@@ -166,7 +174,8 @@ func (c *client) post(path string, body any) (response []byte, err error) {
 		return
 	}
 
-	defer resp.Body.Close()
+	defer close(resp.Body)
+
 	response, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return
@@ -195,7 +204,8 @@ func (c *client) put(path string, body any) (response []byte, err error) {
 		return
 	}
 
-	defer resp.Body.Close()
+	defer close(resp.Body)
+
 	response, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return

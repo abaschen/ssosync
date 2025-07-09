@@ -1,7 +1,7 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
 
-Description: 
+Description:
   This CloudFormation template will deploy a full CI/CD pipeline for SSO
   Sync. It includes building with AWS CodeBuild, publishing to a
   staging (private) AWS Serverless Application Repository (SAR), deployment
@@ -12,45 +12,45 @@ Parameters:
   ManagementAccount:
     Description: AWS Account where staging build is automatically deployed and tested
     Type: String
-    AllowedPattern: '[0-9]+'
+    AllowedPattern: "[0-9]+"
   ManagementBucket:
     Description: Where we upload the tests.zip
     Type: String
-    AllowedPattern: '[A-Za-z0-9:/-]+'
+    AllowedPattern: "[A-Za-z0-9:/-]+"
   DelegatedAccount:
     Description: AWS Account where staging build is automatically deployed and tested
     Type: String
-    AllowedPattern: '[0-9]+'
+    AllowedPattern: "[0-9]+"
   DelegatedBucket:
     Description: Where we upload the tests.zip
     Type: String
-    AllowedPattern: '[A-Za-z0-9:/-]+'
+    AllowedPattern: "[A-Za-z0-9:/-]+"
   NonDelegatedAccount:
     Description: AWS Account where staging build is automatically deployed and tested
     Type: String
-    AllowedPattern: '[0-9]+'
+    AllowedPattern: "[0-9]+"
   NonDelegatedBucket:
     Description: Where we upload the tests.zip
     Type: String
-    AllowedPattern: '[A-Za-z0-9:/-]+'
+    AllowedPattern: "[A-Za-z0-9:/-]+"
   CodeStarConnection:
-    Description:  Resource ARN for the CodeStar Connection to use
+    Description: Resource ARN for the CodeStar Connection to use
     Type: String
-    AllowedPattern: '[A-Za-z0-9:/-]+'
+    AllowedPattern: "[A-Za-z0-9:/-]+"
   SecretsConfig:
-    Description:  Output from the secrets.yaml stack
+    Description: Output from the secrets.yaml stack
     Type: String
     AllowedPattern: '(arn:aws:secretsmanager:((us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\d):[0-9]{8,12}:secret:[a-zA-Z0-9/_+=.@-]{1,512})(,(arn:aws:secretsmanager:((us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\d):[0-9]{8,12}:secret:[a-zA-Z0-9/_+=.@-]{1,512})){3}((,arn:aws:secretsmanager:((us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\d):[0-9]{8,12}:secret:[a-zA-Z0-9/_+=.@-]{1,512})|(,"")){4}(,arn:aws:kms:((us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\d):[0-9]{12}:key/[a-zA-Z0-9/_+=.@-]{1,512})'
 
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
-      - Label: 
+      - Label:
           default: The Management account of the End 2 End Test environment
         Parameters:
           - ManagementAccount
           - ManagementBucket
-      - Label: 
+      - Label:
           default: The Delegated Admin account of the End 2 End Test environment
         Parameters:
           - DelegatedAccount
@@ -68,7 +68,7 @@ Metadata:
           default: Secrets ARNs
         Parameters:
           - SecretsConfig
-            
+
     ParameterLabels:
       CodeStarConnection:
         default: "arn:aws:codestar-connections:<AWS::Region>:<AWS::AccountId>:connection/abcd1234-ab12-ab12--ab12-abcdef123456"
@@ -88,12 +88,11 @@ Metadata:
         default: "TestConfig from the output of secrets.yaml"
 
 Resources:
-
   CodePipelineLogGroup:
     Type: AWS::Logs::LogGroup
     DeletionPolicy: Retain
     UpdateReplacePolicy: Delete
-    Properties: 
+    Properties:
       LogGroupName: SSOSync-Build
       RetentionInDays: 120
 
@@ -101,7 +100,7 @@ Resources:
     Type: AWS::KMS::Key
     DeletionPolicy: Retain
     UpdateReplacePolicy: Delete
-    Properties: 
+    Properties:
       Description: Key for this CodePipeline
       Enabled: true
       KeySpec: SYMMETRIC_DEFAULT
@@ -112,12 +111,12 @@ Resources:
         Version: 2012-10-17
         Id: key-default-1
         Statement:
-        - Sid: Enable IAM User Permissions
-          Effect: Allow
-          Principal:
-            AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
-          Action: 'kms:*'
-          Resource: '*'
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: "kms:*"
+            Resource: "*"
 
   ArtifactBucket:
     Type: AWS::S3::Bucket
@@ -127,8 +126,8 @@ Resources:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: 'aws:kms'
-              KMSMasterKeyID: !GetAtt ArtifactBucketKey.Arn 
+              SSEAlgorithm: "aws:kms"
+              KMSMasterKeyID: !GetAtt ArtifactBucketKey.Arn
             BucketKeyEnabled: true
 
   ArtifactBucketPolicy:
@@ -136,41 +135,41 @@ Resources:
     Properties:
       Bucket: !Ref ArtifactBucket
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Action: ['s3:GetObject']
-          Effect: Allow
-          Principal:
-            Service: 'serverlessrepo.amazonaws.com'
-          Resource:
-          - !Sub ${ArtifactBucket.Arn}/*
-          Condition: 
-            StringEquals: 
-              aws:SourceAccount: !Ref AWS::AccountId
-        - Sid: DenyUnEncryptedObjectUploads
-          Effect: Deny
-          Principal: "*"
-          Action: s3:PutObject
-          Resource: !Sub ${ArtifactBucket.Arn}/*
-          Condition: 
-            StringNotEquals: 
-              s3:x-amz-server-side-encryption: aws:kms
-        - Sid: RequireKMSEncryption
-          Effect: Deny
-          Principal: "*"
-          Action: s3:PutObject
-          Resource: !Sub ${ArtifactBucket.Arn}/*
-          Condition:
-            StringNotLikeIfExists:
-              s3:x-amz-server-side-encryption-aws-kms-key-id: !GetAtt ArtifactBucketKey.Arn
-        - Sid: DenyInsecureConnections
-          Effect: Deny
-          Principal: "*"
-          Action: "s3:*"
-          Resource: !Sub ${ArtifactBucket.Arn}/*
-          Condition: 
-            Bool: 
-              aws:SecureTransport: false
+          - Action: ["s3:GetObject"]
+            Effect: Allow
+            Principal:
+              Service: "serverlessrepo.amazonaws.com"
+            Resource:
+              - !Sub ${ArtifactBucket.Arn}/*
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+          - Sid: DenyUnEncryptedObjectUploads
+            Effect: Deny
+            Principal: "*"
+            Action: s3:PutObject
+            Resource: !Sub ${ArtifactBucket.Arn}/*
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption: aws:kms
+          - Sid: RequireKMSEncryption
+            Effect: Deny
+            Principal: "*"
+            Action: s3:PutObject
+            Resource: !Sub ${ArtifactBucket.Arn}/*
+            Condition:
+              StringNotLikeIfExists:
+                s3:x-amz-server-side-encryption-aws-kms-key-id: !GetAtt ArtifactBucketKey.Arn
+          - Sid: DenyInsecureConnections
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: !Sub ${ArtifactBucket.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: false
 
   AppBucket:
     Type: AWS::S3::Bucket
@@ -182,27 +181,27 @@ Resources:
     Properties:
       Bucket: !Ref AppBucket
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Action: ['s3:GetObject']
-          Effect: Allow
-          Principal:
-            Service: 'serverlessrepo.amazonaws.com'
-          Resource: 
-          - !Sub ${AppBucket.Arn}/*
-          Condition:
-            StringEquals:  
-              aws:SourceAccount: !Ref AWS::AccountId
+          - Action: ["s3:GetObject"]
+            Effect: Allow
+            Principal:
+              Service: "serverlessrepo.amazonaws.com"
+            Resource:
+              - !Sub ${AppBucket.Arn}/*
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
 
   CodePipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
       Name: SSOSync-Build
       RoleArn: !Sub ${CodePipelineRole.Arn}
-      ArtifactStore: 
+      ArtifactStore:
         Type: S3
         Location: !Ref ArtifactBucket
-        EncryptionKey: 
+        EncryptionKey:
           Type: KMS
           Id: !GetAtt ArtifactBucketKey.Arn
       Stages:
@@ -213,7 +212,7 @@ Resources:
               ActionTypeId:
                 Category: Source
                 Owner: AWS
-                Version: 1
+                Version: "1"
                 Provider: CodeStarSourceConnection
               OutputArtifacts:
                 - Name: Source
@@ -225,47 +224,32 @@ Resources:
                 DetectChanges: true
         - Name: Build-App
           Actions:
-            - Name: Git-Metadata
-              Namespace: Git
+            - Name: GoLang-Build
+              Namespace: Build
               InputArtifacts:
                 - Name: Source
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Version: 1
-                Provider: CodeBuild
-              OutputArtifacts:
-                - Name: GitVars
-              RunOrder: 1
-              Configuration:
-                ProjectName: !Ref GitMetadata
-                PrimarySource: Source
-            - Name: GoLang-Build
-              InputArtifacts:
-                - Name: Source
-              ActionTypeId: 
-                Category: Build
-                Owner: AWS
-                Version: 1
+                Version: "1"
                 Provider: CodeBuild
               OutputArtifacts:
                 - Name: Built
               RunOrder: 2
-              Configuration: 
+              Configuration:
                 ProjectName: !Ref CodeBuildApp
                 PrimarySource: Source
-                EnvironmentVariables: '[{"name":"GitTag","value":"#{Git.Tag}","type":"PLAINTEXT"},{"name":"GitCommit","value":"#{Git.CommitId}","type":"PLAINTEXT"}]'
             - Name: SAM-Package-SAR-Stage
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Version: 1
+                Version: "1"
                 Provider: CodeBuild
               RunOrder: 3
               Configuration:
                 ProjectName: !Ref CodeBuildPackage
                 PrimarySource: Source
-                EnvironmentVariables: '[{"name":"GitTag","value":"#{Git.Tag}","type":"PLAINTEXT"},{"name":"GitVersionHash","value":"#{Git.CommitHash}","type":"PLAINTEXT"}]'
+                EnvironmentVariables: '[{"name":"AppVersion","value":"#{Build.AppVersion}","type":"PLAINTEXT"},{"name":"AppCommit","value":"#{Build.AppCommit}","type":"PLAINTEXT"},{"name":"AppTag","value":"#{Build.AppTag}","type":"PLAINTEXT"}]'
               OutputArtifacts:
                 - Name: Packaged
               InputArtifacts:
@@ -278,13 +262,13 @@ Resources:
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Version: 1
+                Version: "1"
                 Provider: CodeBuild
               RunOrder: 1
               Configuration:
                 ProjectName: !Ref CodeBuildStaging
                 PrimarySource: Source
-                EnvironmentVariables: '[{"name":"GitTag","value":"#{Git.Tag}","type":"PLAINTEXT"},{"name":"GitVersionHash","value":"#{Git.CommitHash}","type":"PLAINTEXT"}]'
+                EnvironmentVariables: '[{"name":"AppVersion","value":"#{Build.AppVersion}","type":"PLAINTEXT"},{"name":"AppCommit","value":"#{Build.AppCommit}","type":"PLAINTEXT"},{"name":"AppTag","value":"#{Build.AppTag}","type":"PLAINTEXT"}]'
               OutputArtifacts:
                 - Name: Tests
               InputArtifacts:
@@ -295,7 +279,7 @@ Resources:
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Version: 1
+                Version: "1"
                 Provider: CodeBuild
               RunOrder: 2
               Configuration:
@@ -308,7 +292,7 @@ Resources:
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Version: 1
+                Version: "1"
                 Provider: CodeBuild
               RunOrder: 3
               Configuration:
@@ -321,7 +305,7 @@ Resources:
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Version: 1
+                Version: "1"
                 Provider: CodeBuild
               RunOrder: 4
               Configuration:
@@ -336,13 +320,13 @@ Resources:
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Version: 1
+                Version: "1"
                 Provider: CodeBuild
               RunOrder: 1
               Configuration:
                 ProjectName: !Ref CodeBuildTestingSingleStack
                 PrimarySource: Source
-                EnvironmentVariables: '[{"name":"GitTag","value":"#{Git.Tag}","type":"PLAINTEXT"},{"name":"GitVersionHash","value":"#{Git.CommitHash}","type":"PLAINTEXT"}]'
+                EnvironmentVariables: '[{"name":"AppVersion","value":"#{Build.AppVersion}","type":"PLAINTEXT"},{"name":"AppCommit","value":"#{Build.AppCommit}","type":"PLAINTEXT"},{"name":"AppTag","value":"#{Build.AppTag}","type":"PLAINTEXT"}]'
               InputArtifacts:
                 - Name: Source
               OutputArtifacts:
@@ -354,66 +338,31 @@ Resources:
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Version: 1
+                Version: "1"
                 Provider: CodeBuild
-              RunOrder: '1'
+              RunOrder: 1
               Configuration:
                 ProjectName: !Ref CodeBuildApproveRelease
                 PrimarySource: Source
-                EnvironmentVariables: '[{"name":"GitIsRelease","value":"#{Git.IsRelease}","type":"PLAINTEXT"}]'
+                EnvironmentVariables: '[{"name":"GitIsRelease","value":"#{Build.IsRelease}","type":"PLAINTEXT"}]'
               InputArtifacts:
                 - Name: Source
             - Name: SAR-Release
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Version: 1
+                Version: "1"
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref CodeBuildRelease
                 PrimarySource: Source
-                EnvironmentVariables: '[{"name":"GitTag","value":"#{Git.Tag}","type":"PLAINTEXT"}]'
+                EnvironmentVariables: '[{"name":"AppTag","value":"#{Build.AppTag}","type":"PLAINTEXT"}]'
               OutputArtifacts:
                 - Name: Release
               InputArtifacts:
                 - Name: Source
                 - Name: Packaged
               RunOrder: 2
-
-  GitMetadata:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name:  "SSOSync-Git-Metadata"
-      Description: Build project for SSOSync
-      ServiceRole: !Ref CodeBuildAppRole
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec: "cicd/build/gitvars/buildspec.yml"
-      Environment:
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:7.0
-        Type: LINUX_CONTAINER
-        EnvironmentVariables:
-          - Name: ARTIFACT_S3_BUCKET
-            Value: !Sub ${ArtifactBucket}
-          - Name: GitRepo 
-            Value: "https://github.com/awslabs/ssosync"
-          - Name: GitBranch
-            Value: "master"
-      Artifacts:
-        Name: SSOSync-Build
-        Type: CODEPIPELINE
-      LogsConfig:
-        CloudWatchLogs:
-          GroupName: !Ref CodePipelineLogGroup
-          StreamName: !Ref GitMetadataLogs
-          Status: ENABLED
-
-  GitMetadataLogs:
-    Type: AWS::Logs::LogStream
-    Properties:
-      LogGroupName: !Ref CodePipelineLogGroup
-      LogStreamName: SSOSync-Git-Metadata"
 
   CodeBuildApp:
     Type: AWS::CodeBuild::Project
@@ -446,7 +395,7 @@ Resources:
 
   CodeBuildAppLogs:
     Type: AWS::Logs::LogStream
-    Properties: 
+    Properties:
       LogGroupName: !Ref CodePipelineLogGroup
       LogStreamName: "SSOSync-Build-App"
 
@@ -506,23 +455,23 @@ Resources:
           - Name: AppArn
             Value: !Sub "arn:aws:serverlessrepo:${AWS::Region}:${AWS::AccountId}:applications/SSOSync-Staging"
           - Name: SecretSCIMEndpoint
-            Value: !Select [0, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [0, !Split [",", !Ref SecretsConfig]]
           - Name: SecretSCIMAccessToken
-            Value: !Select [1, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [1, !Split [",", !Ref SecretsConfig]]
           - Name: SecretRegion
-            Value: !Select [2, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [2, !Split [",", !Ref SecretsConfig]]
           - Name: SecretIdentityStoreID
-            Value: !Select [3, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [3, !Split [",", !Ref SecretsConfig]]
           - Name: SecretGoogleCredentials
-            Value: !Select [4, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [4, !Split [",", !Ref SecretsConfig]]
           - Name: SecretGoogleAdminEmail
-            Value: !Select [5, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [5, !Split [",", !Ref SecretsConfig]]
           - Name: SecretWIFClientLibraryConfig
-            Value: !Select [6, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [6, !Split [",", !Ref SecretsConfig]]
           - Name: SecretWIFServiceAccountEmail
-            Value: !Select [7, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [7, !Split [",", !Ref SecretsConfig]]
           - Name: KeyForSecrets
-            Value: !Select [8, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [8, !Split [",", !Ref SecretsConfig]]
       Artifacts:
         Name: SSOSync-Build
         Type: CODEPIPELINE
@@ -616,7 +565,7 @@ Resources:
             Value: !Sub "arn:aws:iam::${NonDelegatedAccount}:role/SSOSync-ProdAccount-${AWS::Region}"
           - Name: pipeline
             Value: "SSOSync-Test-Account_Execution"
-      Artifacts:      
+      Artifacts:
         Name: SSOSync-Build
         Type: CODEPIPELINE
       LogsConfig:
@@ -644,23 +593,23 @@ Resources:
           - Name: AppArn
             Value: !Sub "arn:aws:serverlessrepo:${AWS::Region}:${AWS::AccountId}:applications/SSOSync-Staging"
           - Name: SecretSCIMEndpoint
-            Value: !Select [0, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [0, !Split [",", !Ref SecretsConfig]]
           - Name: SecretSCIMAccessToken
-            Value: !Select [1, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [1, !Split [",", !Ref SecretsConfig]]
           - Name: SecretRegion
-            Value: !Select [2, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [2, !Split [",", !Ref SecretsConfig]]
           - Name: SecretIdentityStoreID
-            Value: !Select [3, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [3, !Split [",", !Ref SecretsConfig]]
           - Name: SecretGoogleCredentials
-            Value: !Select [4, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [4, !Split [",", !Ref SecretsConfig]]
           - Name: SecretGoogleAdminEmail
-            Value: !Select [5, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [5, !Split [",", !Ref SecretsConfig]]
           - Name: SecretWIFClientLibraryConfig
-            Value: !Select [6, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [6, !Split [",", !Ref SecretsConfig]]
           - Name: SecretWIFServiceAccountEmail
-            Value: !Select [7, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [7, !Split [",", !Ref SecretsConfig]]
           - Name: KeyForSecrets
-            Value: !Select [8, !Split [',', !Ref SecretsConfig]]
+            Value: !Select [8, !Split [",", !Ref SecretsConfig]]
           - Name: TARGETS3BUCKET
             Value: !Sub ${DelegatedBucket}
           - Name: StagingRole
@@ -744,277 +693,273 @@ Resources:
       LogGroupName: !Ref CodePipelineLogGroup
       LogStreamName: "SSOSync-Release"
 
-
   CodePipelineRole:
     Type: AWS::IAM::Role
-    Properties: 
+    Properties:
       RoleName: !Sub "SSOSync-CodePipeline-${AWS::Region}"
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal: 
-            Service: [codepipeline.amazonaws.com] 
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              Service: [codepipeline.amazonaws.com]
       Path: /
       Policies:
         - PolicyName: !Sub "SSOSync-CodePipeline-${AWS::Region}"
-          PolicyDocument:                     
-            Version: '2012-10-17'
-            Statement: 
-            - Action:
-              - 'iam:PassRole'
-              Effect: Allow
-              Resource: '*'
-            - Action:
-              - 'codestar-connections:UseConnection'
-              - 'codestar-connections:GetConnection'
-              - 'codestar-connections:ListConnections'
-              - 'codestar-connections:ListTagsForResource'
-              Resource: !Ref CodeStarConnection
-              Effect: Allow
-            - Action:
-              - 'codebuild:BatchGetBuilds'
-              - 'codebuild:StartBuild'
-              Resource:
-              - !Sub ${GitMetadata.Arn}
-              - !Sub ${CodeBuildApp.Arn}
-              - !Sub ${CodeBuildPackage.Arn}
-              - !Sub ${CodeBuildStaging.Arn}
-              - !Sub ${CodeBuildTestingManagement.Arn}
-              - !Sub ${CodeBuildTestingDelegated.Arn}
-              - !Sub ${CodeBuildTestingNonDelegated.Arn}
-              - !Sub ${CodeBuildTestingSingleStack.Arn}
-              - !Sub ${CodeBuildApproveRelease.Arn}
-              - !Sub ${CodeBuildRelease.Arn}
-              Effect: Allow
-            - Action:
-              - 's3:GetBucketPolicy'
-              - 's3:GetBucketVersioning'
-              Resource:
-              - !Sub ${ArtifactBucket.Arn}
-              Effect: Allow
-            - Action:
-              - 's3:*'
-              Resource:
-              - !Sub ${ArtifactBucket.Arn}/*
-              Effect: Allow
-            - Action:
-              - 'kms:DescribeKey'
-              - 'kms:GenerateDataKey*'
-              - 'kms:Encrypt'
-              - 'kms:ReEncrypt*'
-              - 'kms:Decrypt'
-              Effect: Allow
-              Resource:
-              - !GetAtt ArtifactBucketKey.Arn
-            - Action:
-              - 'sts:AssumeRole'
-              Resource:
-              - !Sub arn:aws:iam::${ManagementAccount}:role/ProductionAcctCodePipelineCloudFormationRole
-              - !Sub arn:aws:iam::${DelegatedAccount}:role/ProductionAcctCodePipelineCloudFormationRole
-              - !Sub arn:aws:iam::${NonDelegatedAccount}:role/ProductionAcctCodePipelineCloudFormationRole
-              Effect: Allow
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "iam:PassRole"
+                Effect: Allow
+                Resource: "*"
+              - Action:
+                  - "codestar-connections:UseConnection"
+                  - "codestar-connections:GetConnection"
+                  - "codestar-connections:ListConnections"
+                  - "codestar-connections:ListTagsForResource"
+                Resource: !Ref CodeStarConnection
+                Effect: Allow
+              - Action:
+                  - "codebuild:BatchGetBuilds"
+                  - "codebuild:StartBuild"
+                Resource:
+                  - !Sub ${CodeBuildApp.Arn}
+                  - !Sub ${CodeBuildPackage.Arn}
+                  - !Sub ${CodeBuildStaging.Arn}
+                  - !Sub ${CodeBuildTestingManagement.Arn}
+                  - !Sub ${CodeBuildTestingDelegated.Arn}
+                  - !Sub ${CodeBuildTestingNonDelegated.Arn}
+                  - !Sub ${CodeBuildTestingSingleStack.Arn}
+                  - !Sub ${CodeBuildApproveRelease.Arn}
+                  - !Sub ${CodeBuildRelease.Arn}
+                Effect: Allow
+              - Action:
+                  - "s3:GetBucketPolicy"
+                  - "s3:GetBucketVersioning"
+                Resource:
+                  - !Sub ${ArtifactBucket.Arn}
+                Effect: Allow
+              - Action:
+                  - "s3:*"
+                Resource:
+                  - !Sub ${ArtifactBucket.Arn}/*
+                Effect: Allow
+              - Action:
+                  - "kms:DescribeKey"
+                  - "kms:GenerateDataKey*"
+                  - "kms:Encrypt"
+                  - "kms:ReEncrypt*"
+                  - "kms:Decrypt"
+                Effect: Allow
+                Resource:
+                  - !GetAtt ArtifactBucketKey.Arn
+              - Action:
+                  - "sts:AssumeRole"
+                Resource:
+                  - !Sub arn:aws:iam::${ManagementAccount}:role/ProductionAcctCodePipelineCloudFormationRole
+                  - !Sub arn:aws:iam::${DelegatedAccount}:role/ProductionAcctCodePipelineCloudFormationRole
+                  - !Sub arn:aws:iam::${NonDelegatedAccount}:role/ProductionAcctCodePipelineCloudFormationRole
+                Effect: Allow
 
   CodeBuildAppRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub SSOSync-CodeBuild-App-${AWS::Region}
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal:
-            Service: [codebuild.amazonaws.com]
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              Service: [codebuild.amazonaws.com]
       Path: /
       Policies:
         - PolicyName: !Sub SSOSync-CodeBuild-App-${AWS::Region}
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-            - Action:
-              - 'logs:CreateLogGroup'
-              - 'logs:CreateLogStream'
-              - 'logs:PutLogEvents'
-              Effect: Allow
-              Resource: '*'
-            - Action:
-              - 'kms:DescribeKey'
-              - 'kms:GenerateDataKey*'
-              - 'kms:Encrypt'
-              - 'kms:ReEncrypt*'
-              - 'kms:Decrypt'
-              Effect: Allow
-              Resource:
-              - !GetAtt ArtifactBucketKey.Arn
-            - Action: 's3:*'
-              Effect: Allow
-              Resource:
-              - !Sub ${ArtifactBucket.Arn}/*
+              - Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: Allow
+                Resource: "*"
+              - Action:
+                  - "kms:DescribeKey"
+                  - "kms:GenerateDataKey*"
+                  - "kms:Encrypt"
+                  - "kms:ReEncrypt*"
+                  - "kms:Decrypt"
+                Effect: Allow
+                Resource:
+                  - !GetAtt ArtifactBucketKey.Arn
+              - Action: "s3:*"
+                Effect: Allow
+                Resource:
+                  - !Sub ${ArtifactBucket.Arn}/*
 
   CodeBuildPackageRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub SSOSync-CodeBuild-Package-${AWS::Region}
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal:
-            Service: [codebuild.amazonaws.com]
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              Service: [codebuild.amazonaws.com]
       Path: /
       Policies:
         - PolicyName: !Sub SSOSync-CodeBuild-Package-${AWS::Region}
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-            - Action:
-              - 'logs:CreateLogGroup'
-              - 'logs:CreateLogStream'
-              - 'logs:PutLogEvents'
-              Effect: Allow
-              Resource: '*'
-            - Action:
-              - 'kms:DescribeKey'
-              - 'kms:GenerateDataKey*'
-              - 'kms:Encrypt'
-              - 'kms:ReEncrypt*'
-              - 'kms:Decrypt'
-              Effect: Allow
-              Resource:
-              - !GetAtt ArtifactBucketKey.Arn
-            - Action: 's3:*'
-              Effect: Allow
-              Resource:
-              - !Sub ${ArtifactBucket.Arn}/*
-              - !Sub ${AppBucket.Arn}/*
-            - Action: 'serverlessrepo:*'
-              Effect: Allow
-              Resource:
-              - !Sub arn:aws:serverlessrepo:${AWS::Region}:${AWS::AccountId}:applications/*
-            - Action:
-              - 'ssm:GetParameters'
-              - 'ssm:PutParameter'
-              - 'ssm:DeleteParameter'
-              - 'ssm:DeleteParameters'
-              - 'ssm:DescribeParameters'
-              Effect: Allow
-              Resource:
-              - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/SSOSync/*
+              - Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: Allow
+                Resource: "*"
+              - Action:
+                  - "kms:DescribeKey"
+                  - "kms:GenerateDataKey*"
+                  - "kms:Encrypt"
+                  - "kms:ReEncrypt*"
+                  - "kms:Decrypt"
+                Effect: Allow
+                Resource:
+                  - !GetAtt ArtifactBucketKey.Arn
+              - Action: "s3:*"
+                Effect: Allow
+                Resource:
+                  - !Sub ${ArtifactBucket.Arn}/*
+                  - !Sub ${AppBucket.Arn}/*
+              - Action: "serverlessrepo:*"
+                Effect: Allow
+                Resource:
+                  - !Sub arn:aws:serverlessrepo:${AWS::Region}:${AWS::AccountId}:applications/*
+              - Action:
+                  - "ssm:GetParameters"
+                  - "ssm:PutParameter"
+                  - "ssm:DeleteParameter"
+                  - "ssm:DeleteParameters"
+                  - "ssm:DescribeParameters"
+                Effect: Allow
+                Resource:
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/SSOSync/*
 
   CodeBuildPublishRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub SSOSync-CodeBuild-Publish-${AWS::Region}
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal:
-            Service: [codebuild.amazonaws.com]
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              Service: [codebuild.amazonaws.com]
       Path: /
       Policies:
         - PolicyName: !Sub SSOSync-CodeBuild-Publish-${AWS::Region}
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-            - Action:
-              - 'logs:CreateLogGroup'
-              - 'logs:CreateLogStream'
-              - 'logs:PutLogEvents'
-              Effect: Allow
-              Resource: '*'  
-            - Action: 's3:*'
-              Effect: Allow
-              Resource:
-              - !Sub ${ArtifactBucket.Arn}/*
-              - !Sub ${AppBucket.Arn}/*
-            - Action:
-              - 'kms:DescribeKey'
-              - 'kms:GenerateDataKey*'
-              - 'kms:Encrypt'
-              - 'kms:ReEncrypt*'
-              - 'kms:Decrypt'
-              Effect: Allow
-              Resource:
-              - !GetAtt ArtifactBucketKey.Arn
-            - Action: 'serverlessrepo:*'
-              Effect: Allow
-              Resource: 
-              - !Sub arn:aws:serverlessrepo:${AWS::Region}:${AWS::AccountId}:applications/*
-            - Action: 
-              - 'ssm:GetParameters'
-              - 'ssm:PutParameter'
-              - 'ssm:DeleteParameter'
-              - 'ssm:DeleteParameters'
-              - 'ssm:DescribeParameters'
-              Effect: Allow
-              Resource:
-              - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/SSOSync/*
-      
+              - Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: Allow
+                Resource: "*"
+              - Action: "s3:*"
+                Effect: Allow
+                Resource:
+                  - !Sub ${ArtifactBucket.Arn}/*
+                  - !Sub ${AppBucket.Arn}/*
+              - Action:
+                  - "kms:DescribeKey"
+                  - "kms:GenerateDataKey*"
+                  - "kms:Encrypt"
+                  - "kms:ReEncrypt*"
+                  - "kms:Decrypt"
+                Effect: Allow
+                Resource:
+                  - !GetAtt ArtifactBucketKey.Arn
+              - Action: "serverlessrepo:*"
+                Effect: Allow
+                Resource:
+                  - !Sub arn:aws:serverlessrepo:${AWS::Region}:${AWS::AccountId}:applications/*
+              - Action:
+                  - "ssm:GetParameters"
+                  - "ssm:PutParameter"
+                  - "ssm:DeleteParameter"
+                  - "ssm:DeleteParameters"
+                  - "ssm:DescribeParameters"
+                Effect: Allow
+                Resource:
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/SSOSync/*
+
   CodeBuildTestRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub SSOSync-CodeBuild-Test-${AWS::Region}
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal:
-            Service: [codebuild.amazonaws.com]
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              Service: [codebuild.amazonaws.com]
       Path: /
       Policies:
         - PolicyName: !Sub SSOSync-CodeBuild-Test-${AWS::Region}
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-            - Action:
-              - 'logs:CreateLogGroup'
-              - 'logs:CreateLogStream'
-              - 'logs:PutLogEvents'
-              Effect: Allow
-              Resource: '*'
-            - Action:
-              - 'kms:DescribeKey'
-              - 'kms:GenerateDataKey*'
-              - 'kms:Encrypt'
-              - 'kms:ReEncrypt*'
-              - 'kms:Decrypt'
-              Effect: Allow
-              Resource:
-              - !GetAtt ArtifactBucketKey.Arn
-            - Action: 's3:*'
-              Effect: Allow
-              Resource:
-              - !Sub ${ArtifactBucket.Arn}/*
-            - Action:
-              - 'kms:DescribeKey'
-              - 'kms:GenerateDataKey*'
-              - 'kms:Encrypt'
-              - 'kms:ReEncrypt*'
-              - 'kms:Decrypt'
-              Effect: Allow
-              Resource:
-              - !GetAtt ArtifactBucketKey.Arn
-            - Action:
-              - 'sts:AssumeRole'
-              Resource:
-              - !Sub arn:aws:iam::${ManagementAccount}:role/SSOSync-ProdAccount-${AWS::Region}
-              - !Sub arn:aws:iam::${DelegatedAccount}:role/SSOSync-ProdAccount-${AWS::Region}
-              - !Sub arn:aws:iam::${NonDelegatedAccount}:role/SSOSync-ProdAccount-${AWS::Region}
-              Effect: Allow
-            - Action:
-              -  'lambda:invoke'
-              Effect: Allow
-              Resource: '*'
-              
+              - Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: Allow
+                Resource: "*"
+              - Action:
+                  - "kms:DescribeKey"
+                  - "kms:GenerateDataKey*"
+                  - "kms:Encrypt"
+                  - "kms:ReEncrypt*"
+                  - "kms:Decrypt"
+                Effect: Allow
+                Resource:
+                  - !GetAtt ArtifactBucketKey.Arn
+              - Action: "s3:*"
+                Effect: Allow
+                Resource:
+                  - !Sub ${ArtifactBucket.Arn}/*
+              - Action:
+                  - "kms:DescribeKey"
+                  - "kms:GenerateDataKey*"
+                  - "kms:Encrypt"
+                  - "kms:ReEncrypt*"
+                  - "kms:Decrypt"
+                Effect: Allow
+                Resource:
+                  - !GetAtt ArtifactBucketKey.Arn
+              - Action:
+                  - "sts:AssumeRole"
+                Resource:
+                  - !Sub arn:aws:iam::${ManagementAccount}:role/SSOSync-ProdAccount-${AWS::Region}
+                  - !Sub arn:aws:iam::${DelegatedAccount}:role/SSOSync-ProdAccount-${AWS::Region}
+                  - !Sub arn:aws:iam::${NonDelegatedAccount}:role/SSOSync-ProdAccount-${AWS::Region}
+                Effect: Allow
+              - Action:
+                  - "lambda:invoke"
+                Effect: Allow
+                Resource: "*"
 
 Outputs:
-
   ProductionAccount:
     Description: "The account id"
     Value: !Ref AWS::AccountId

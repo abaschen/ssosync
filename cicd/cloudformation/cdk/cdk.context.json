@@ -1,0 +1,21 @@
+{
+  "ssosync/secrets/managementAccount": "11111111111",
+  "ssosync/secrets/delegatedAccount": "222222222222",
+  "ssosync/secrets/nonDelegatedAccount": "333333333333",
+  "ssosync/secrets/googleAuthMethod": "Google Credentials",
+  "ssosync/secrets/GoogleSSOSyncServiceAccount-File": "./google-service-account.json",
+
+  "ssosync/secrets/wifServiceAccountEmail": "",
+  "ssosync/secrets/wifClientLibraryConfig": "",
+
+  "ssosync/aws-sso/scimEndpointUrl": "https://scim.eu-west-1.amazonaws.com/111111111111111111111/scim/v2",
+  "ssosync/aws-sso/scimEndpointAccessToken": "1111111111111111111111111111111111111",
+  "ssosync/aws-sso/identityStoreId": "d-312123123",
+  "ssosync/aws-sso/region": "eu-west-1",
+  
+  "ssosync/ownerName": "abaschen",
+  "ssosync/repoName": "ssosync",
+  "ssosync/branchName": "abaschen/2.2.10",
+
+  "ssosync/githubOAuthToken": "ghp_1231231231231231231232"
+}

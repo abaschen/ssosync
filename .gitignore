@@ -49,3 +49,4 @@ internal/mocks/*.go
 *.lock.hcl
 google-service-account.json
 *.auto.tfvars
+/bootstrap

@@ -15,20 +15,8 @@
 package main
 
 import (
-	"log"
-
 	"github.com/awslabs/ssosync/cmd"
 )
-
-var (
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
-)
-
-func init() {
-	log.Printf("SSOSync %s, commit %s, built at %s", version, commit, date)
-}
 
 func main() {
 	cmd.Execute()

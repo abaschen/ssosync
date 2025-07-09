@@ -1,7 +1,7 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
 
-Description: 
+Description:
   This CloudFormation template will deploy a full CI/CD pipeline for testing SSO
   Sync, within a staging account, triggered from a build pipeline in a production
   account.
@@ -11,7 +11,7 @@ Parameters:
     Description: AWS Account where the build pipeline in deployed
     Default: "004480582608"
     Type: String
-    AllowedPattern: '[0-9]+'
+    AllowedPattern: "[0-9]+"
   TestAccount:
     Description: The test account type
     Default: "Management"
@@ -27,7 +27,6 @@ Parameters:
   DelegatedBucket:
     Description: The S3 bucket arn from the testing stack in the the delegated account
     Type: String
-
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -46,7 +45,7 @@ Metadata:
         Parameters:
           - DelegatedAccount
           - DelegatedBucket
-            
+
     ParameterLabels:
       ProductionAccount:
         default: "ProductionAccount"
@@ -58,22 +57,21 @@ Metadata:
         default: "bucket in the Delegated Account"
 
 Conditions:
-  DeployManagement: !Equals [ !Ref TestAccount, Management]
-  DeployDelegated: !Equals [ !Ref TestAccount, Delegated]
-  DeployNonDelegated: !Equals [ !Ref TestAccount, NonDelegated]
+  DeployManagement: !Equals [!Ref TestAccount, Management]
+  DeployDelegated: !Equals [!Ref TestAccount, Delegated]
+  DeployNonDelegated: !Equals [!Ref TestAccount, NonDelegated]
 
 Resources:
-
   CodePipelineLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
-    Properties: 
+    Properties:
       LogGroupName: SSOSync-Test
       RetentionInDays: 120
 
   ArtifactBucketKey:
     Type: AWS::KMS::Key
-    Properties: 
+    Properties:
       Description: Key for this CodePipeline
       Enabled: true
       KeySpec: SYMMETRIC_DEFAULT
@@ -84,12 +82,12 @@ Resources:
         Version: 2012-10-17
         Id: key-default-1
         Statement:
-        - Sid: Enable IAM User Permissions
-          Effect: Allow
-          Principal:
-            AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
-          Action: 'kms:*'
-          Resource: '*'
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: "kms:*"
+            Resource: "*"
 
   ArtifactBucket:
     Type: AWS::S3::Bucket
@@ -99,8 +97,8 @@ Resources:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: 'aws:kms'
-              KMSMasterKeyID: !GetAtt ArtifactBucketKey.Arn 
+              SSEAlgorithm: "aws:kms"
+              KMSMasterKeyID: !GetAtt ArtifactBucketKey.Arn
             BucketKeyEnabled: true
 
   ArtifactBucketPolicy:
@@ -108,32 +106,32 @@ Resources:
     Properties:
       Bucket: !Ref ArtifactBucket
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Sid: DenyUnEncryptedObjectUploads
-          Effect: Deny
-          Principal: "*"
-          Action: s3:PutObject
-          Resource: !Sub ${ArtifactBucket.Arn}/*
-          Condition: 
-            StringNotEquals: 
-              s3:x-amz-server-side-encryption: aws:kms
-        - Sid: RequireKMSEncryption
-          Effect: Deny
-          Principal: "*"
-          Action: s3:PutObject
-          Resource: !Sub ${ArtifactBucket.Arn}/*
-          Condition:
-            StringNotLikeIfExists:
-              s3:x-amz-server-side-encryption-aws-kms-key-id: !GetAtt ArtifactBucketKey.Arn
-        - Sid: DenyInsecureConnections
-          Effect: Deny
-          Principal: "*"
-          Action: "s3:*"
-          Resource: !Sub ${ArtifactBucket.Arn}/*
-          Condition: 
-            Bool: 
-              aws:SecureTransport: false
+          - Sid: DenyUnEncryptedObjectUploads
+            Effect: Deny
+            Principal: "*"
+            Action: s3:PutObject
+            Resource: !Sub ${ArtifactBucket.Arn}/*
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption: aws:kms
+          - Sid: RequireKMSEncryption
+            Effect: Deny
+            Principal: "*"
+            Action: s3:PutObject
+            Resource: !Sub ${ArtifactBucket.Arn}/*
+            Condition:
+              StringNotLikeIfExists:
+                s3:x-amz-server-side-encryption-aws-kms-key-id: !GetAtt ArtifactBucketKey.Arn
+          - Sid: DenyInsecureConnections
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: !Sub ${ArtifactBucket.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: false
 
   StagingBucket:
     Type: AWS::S3::Bucket
@@ -147,17 +145,17 @@ Resources:
     Properties:
       Bucket: !Ref StagingBucket
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Action: ['s3:GetObject']
-          Effect: Allow
-          Principal:
-            Service: 'codepipeline.amazonaws.com'
-          Resource:
-          - !Sub ${StagingBucket.Arn}/*
-          Condition:
-            StringEquals:
-              aws:SourceAccount: !Ref AWS::AccountId
+          - Action: ["s3:GetObject"]
+            Effect: Allow
+            Principal:
+              Service: "codepipeline.amazonaws.com"
+            Resource:
+              - !Sub ${StagingBucket.Arn}/*
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
 
   CodePipelineTestAccountExecution:
     Type: AWS::CodePipeline::Pipeline
@@ -182,7 +180,7 @@ Resources:
                 Provider: S3
               OutputArtifacts:
                 - Name: Tests
-              RunOrder: '1'
+              RunOrder: "1"
               Configuration:
                 S3Bucket: !Ref StagingBucket
                 S3ObjectKey: tests.zip
@@ -193,15 +191,15 @@ Resources:
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
-                Version: '1'
+                Version: "1"
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
                 Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND,CAPABILITY_NAMED_IAM
                 StackName: TestAccountExecution
                 RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
-                TemplateConfiguration: 'Tests::deploy/lambda.json'
-                TemplatePath: !Sub 'Tests::deploy/stack.yml'
+                TemplateConfiguration: "Tests::deploy/lambda.json"
+                TemplatePath: !Sub "Tests::deploy/stack.yml"
               InputArtifacts:
                 - Name: Tests
               RunOrder: 1
@@ -225,15 +223,15 @@ Resources:
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
-                Version: '1'
+                Version: "1"
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
                 Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND,CAPABILITY_NAMED_IAM
                 StackName: TestAccountExecution
                 RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
-                TemplateConfiguration: 'Tests::deploy/cli.json'
-                TemplatePath: !Sub 'Tests::deploy/stack.yml'
+                TemplateConfiguration: "Tests::deploy/cli.json"
+                TemplatePath: !Sub "Tests::deploy/stack.yml"
               InputArtifacts:
                 - Name: Tests
               RunOrder: 1
@@ -252,39 +250,39 @@ Resources:
               InputArtifacts:
                 - Name: Tests
         - !If
-            - DeployDelegated
-            - Name: TestsCodePipeline
-              Actions:
-                - Name: Deploy
-                  ActionTypeId:
-                    Category: Deploy
-                    Owner: AWS
-                    Version: '1'
-                    Provider: CloudFormation
-                  Configuration:
-                    ActionMode: CREATE_UPDATE
-                    Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND,CAPABILITY_NAMED_IAM
-                    StackName: TestAccountExecution
-                    RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
-                    TemplateConfiguration: 'Tests::deploy/codepipeline.json'
-                    TemplatePath: !Sub 'Tests::deploy/stack.yml'
-                  InputArtifacts:
-                    - Name: Tests
-                  RunOrder: 1
-                - Name: CodePipeline
-                  ActionTypeId:
-                    Category: Invoke
-                    Owner: AWS
-                    Version: 1
-                    Provider: Lambda
-                  RunOrder: 2
-                  Configuration:
-                    FunctionName: SSOSyncFunction
-                  OutputArtifacts:
-                    - Name: AccountExecutionCodePipeline
-                  InputArtifacts:
-                    - Name: Tests
-            - !Ref AWS::NoValue
+          - DeployDelegated
+          - Name: TestsCodePipeline
+            Actions:
+              - Name: Deploy
+                ActionTypeId:
+                  Category: Deploy
+                  Owner: AWS
+                  Version: "1"
+                  Provider: CloudFormation
+                Configuration:
+                  ActionMode: CREATE_UPDATE
+                  Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND,CAPABILITY_NAMED_IAM
+                  StackName: TestAccountExecution
+                  RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
+                  TemplateConfiguration: "Tests::deploy/codepipeline.json"
+                  TemplatePath: !Sub "Tests::deploy/stack.yml"
+                InputArtifacts:
+                  - Name: Tests
+                RunOrder: 1
+              - Name: CodePipeline
+                ActionTypeId:
+                  Category: Invoke
+                  Owner: AWS
+                  Version: 1
+                  Provider: Lambda
+                RunOrder: 2
+                Configuration:
+                  FunctionName: SSOSyncFunction
+                OutputArtifacts:
+                  - Name: AccountExecutionCodePipeline
+                InputArtifacts:
+                  - Name: Tests
+          - !Ref AWS::NoValue
         - Name: CleanUp
           Actions:
             - Name: RemoveStack
@@ -325,7 +323,7 @@ Resources:
                 Provider: S3
               OutputArtifacts:
                 - Name: Tests
-              RunOrder: '1'
+              RunOrder: "1"
               Configuration:
                 S3Bucket: !Ref StagingBucket
                 S3ObjectKey: crossaccount_secrets.zip
@@ -336,15 +334,15 @@ Resources:
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
-                Version: '1'
+                Version: "1"
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
                 Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND,CAPABILITY_NAMED_IAM
                 StackName: TestCrossAccountSecrets
                 RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
-                TemplateConfiguration: 'Tests::deploy/crossaccountsecrets.json'
-                TemplatePath: !Sub 'Tests::deploy/crossaccountsecrets.yml'
+                TemplateConfiguration: "Tests::deploy/crossaccountsecrets.json"
+                TemplatePath: !Sub "Tests::deploy/crossaccountsecrets.yml"
                 OutputFileName: crossaccountapp.json
               InputArtifacts:
                 - Name: Tests
@@ -404,7 +402,7 @@ Resources:
                 Provider: S3
               OutputArtifacts:
                 - Name: Tests
-              RunOrder: '1'
+              RunOrder: "1"
               Configuration:
                 S3Bucket: !Ref StagingBucket
                 S3ObjectKey: crossaccount_app.zip
@@ -415,15 +413,15 @@ Resources:
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
-                Version: '1'
+                Version: "1"
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
                 Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND,CAPABILITY_NAMED_IAM
                 StackName: TestCrossAccountApp
                 RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
-                TemplateConfiguration: 'Tests::deploy/crossaccountapp.json'
-                TemplatePath: !Sub 'Tests::deploy/crossaccountapp.yml'
+                TemplateConfiguration: "Tests::deploy/crossaccountapp.json"
+                TemplatePath: !Sub "Tests::deploy/crossaccountapp.yml"
               InputArtifacts:
                 - Name: Tests
               RunOrder: 1
@@ -478,11 +476,11 @@ Resources:
               ActionTypeId:
                 Category: Source
                 Owner: AWS
-                Version: 1
+                Version: "1"
                 Provider: S3
               OutputArtifacts:
                 - Name: Tests
-              RunOrder: '1'
+              RunOrder: 1
               Configuration:
                 S3Bucket: !Ref StagingBucket
                 S3ObjectKey: singlestack.zip
@@ -493,15 +491,15 @@ Resources:
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
-                Version: '1'
+                Version: "1"
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
                 Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND,CAPABILITY_NAMED_IAM
                 StackName: TestSingleStack
                 RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
-                TemplateConfiguration: 'Tests::deploy/singlestack.json'
-                TemplatePath: !Sub 'Tests::deploy/namedfunction.yml'
+                TemplateConfiguration: "Tests::deploy/singlestack.json"
+                TemplatePath: !Sub "Tests::deploy/namedfunction.json"
               InputArtifacts:
                 - Name: Tests
               RunOrder: 1
@@ -537,15 +535,15 @@ Resources:
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
-                Version: '1'
+                Version: "1"
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
                 Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND,CAPABILITY_NAMED_IAM
                 StackName: TestSingleStack
                 RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
-                TemplateConfiguration: 'Tests::deploy/singlestack.json'
-                TemplatePath: !Sub 'Tests::deploy/unnamedfunction.yml'
+                TemplateConfiguration: "Tests::deploy/singlestack.json"
+                TemplatePath: !Sub "Tests::deploy/unnamedfunction.json"
               InputArtifacts:
                 - Name: Tests
               RunOrder: 1
@@ -587,7 +585,7 @@ Resources:
                 Provider: S3
               OutputArtifacts:
                 - Name: Tests
-              RunOrder: '1'
+              RunOrder: "1"
               Configuration:
                 S3Bucket: !Ref StagingBucket
                 S3ObjectKey: splitstack.zip
@@ -598,15 +596,15 @@ Resources:
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
-                Version: '1'
+                Version: "1"
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
                 Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND,CAPABILITY_NAMED_IAM
                 StackName: TestSecretsOnly
                 RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
-                TemplateConfiguration: 'Tests::deploy/secretsonly.json'
-                TemplatePath: !Sub 'Tests::deploy/secretsonly.yml'
+                TemplateConfiguration: "Tests::deploy/secretsonly.json"
+                TemplatePath: !Sub "Tests::deploy/secretsonly.yml"
                 OutputFileName: apponly.json
               InputArtifacts:
                 - Name: Tests
@@ -617,15 +615,15 @@ Resources:
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
-                Version: '1'
+                Version: "1"
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
                 Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND,CAPABILITY_NAMED_IAM
                 StackName: TestAppOnly
                 RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
-                TemplateConfiguration: 'Tests::deploy/apponly.json'
-                TemplatePath: !Sub 'Tests::deploy/apponly.yml'
+                TemplateConfiguration: "Tests::deploy/apponly.json"
+                TemplatePath: !Sub "Tests::deploy/apponly.yml"
               InputArtifacts:
                 - Name: Tests
                 - Name: Secrets
@@ -777,197 +775,196 @@ Resources:
 
   CodePipelineRole:
     Type: AWS::IAM::Role
-    Properties: 
+    Properties:
       RoleName: !Sub SSOSync-CodePipeline-${AWS::Region}
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal: 
-            Service: [codepipeline.amazonaws.com] 
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              Service: [codepipeline.amazonaws.com]
       Path: /
-      Policies: 
+      Policies:
         - PolicyName: !Sub SSOSync-CodePipeline-${AWS::Region}
-          PolicyDocument:                     
-            Version: '2012-10-17'
-            Statement: 
-            - Action:
-              - 'iam:PassRole'
-              Effect: Allow
-              Resource: '*'
-            - Action:
-              - 'codebuild:BatchGetBuilds'
-              - 'codebuild:StartBuild'
-              Resource:
-              - !Sub ${CodeBuildSmokeCLI.Arn}
-              - !Sub ${CodeBuildSmokeLambda.Arn}
-              Effect: Allow
-            - Action:
-              - 's3:GetBucketPolicy'
-              - 's3:GetBucketVersioning'
-              Resource:
-              - !Sub ${ArtifactBucket.Arn}
-              - !Sub ${StagingBucket.Arn}
-              Effect: Allow
-            - Action:
-              - 's3:*'
-              Resource:
-              - !Sub ${ArtifactBucket.Arn}/*
-              - !Sub ${StagingBucket.Arn}/*
-              Effect: Allow
-            - Action:
-              - 'kms:DescribeKey'
-              - 'kms:GenerateDataKey*'
-              - 'kms:Encrypt'
-              - 'kms:ReEncrypt*'
-              - 'kms:Decrypt'
-              Effect: Allow
-              Resource:
-              - !GetAtt ArtifactBucketKey.Arn
-            - Action:
-              - 'lambda:InvokeFunction'
-              Resource:
-              - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:SSOSyncFunction
-              Effect: Allow
-            - Action:
-              - 'cloudformation:CreateStack'
-              - 'cloudformation:DescribeStacks'
-              - 'cloudformation:DeleteStack'
-              - 'cloudformation:UpdateStack'
-              - 'cloudformation:CreateChangeSet'
-              - 'cloudformation:ExecuteChangeSet'
-              - 'cloudformation:DeleteChangeSet'
-              - 'cloudformation:DescribeChangeSet'
-              - 'cloudformation:SetStackPolicy'
-              Resource:
-              - '*'
-              Effect: Allow
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "iam:PassRole"
+                Effect: Allow
+                Resource: "*"
+              - Action:
+                  - "codebuild:BatchGetBuilds"
+                  - "codebuild:StartBuild"
+                Resource:
+                  - !Sub ${CodeBuildSmokeCLI.Arn}
+                  - !Sub ${CodeBuildSmokeLambda.Arn}
+                Effect: Allow
+              - Action:
+                  - "s3:GetBucketPolicy"
+                  - "s3:GetBucketVersioning"
+                Resource:
+                  - !Sub ${ArtifactBucket.Arn}
+                  - !Sub ${StagingBucket.Arn}
+                Effect: Allow
+              - Action:
+                  - "s3:*"
+                Resource:
+                  - !Sub ${ArtifactBucket.Arn}/*
+                  - !Sub ${StagingBucket.Arn}/*
+                Effect: Allow
+              - Action:
+                  - "kms:DescribeKey"
+                  - "kms:GenerateDataKey*"
+                  - "kms:Encrypt"
+                  - "kms:ReEncrypt*"
+                  - "kms:Decrypt"
+                Effect: Allow
+                Resource:
+                  - !GetAtt ArtifactBucketKey.Arn
+              - Action:
+                  - "lambda:InvokeFunction"
+                Resource:
+                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:SSOSyncFunction
+                Effect: Allow
+              - Action:
+                  - "cloudformation:CreateStack"
+                  - "cloudformation:DescribeStacks"
+                  - "cloudformation:DeleteStack"
+                  - "cloudformation:UpdateStack"
+                  - "cloudformation:CreateChangeSet"
+                  - "cloudformation:ExecuteChangeSet"
+                  - "cloudformation:DeleteChangeSet"
+                  - "cloudformation:DescribeChangeSet"
+                  - "cloudformation:SetStackPolicy"
+                Resource:
+                  - "*"
+                Effect: Allow
 
   ProdAccountRole:
     Type: AWS::IAM::Role
-    Properties: 
+    Properties:
       RoleName: !Sub SSOSync-ProdAccount-${AWS::Region}
       AssumeRolePolicyDocument:
         Statement:
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal: 
-            AWS: !Ref ProductionAccount
-        Version: '2012-10-17'
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              AWS: !Ref ProductionAccount
+        Version: "2012-10-17"
       Path: /
-      Policies: 
+      Policies:
         - PolicyName: !Sub SSOSync-ProdAccount-${AWS::Region}
-          PolicyDocument:                     
-            Version: '2012-10-17'
-            Statement: 
-            - Action:
-              - 'codepipeline:*'
-              Effect: Allow
-              Resource:
-              - '*'
-            - Action:
-              - 's3:GetBucketPolicy'
-              - 's3:GetBucketVersioning'
-              Resource:
-              - !Sub ${StagingBucket.Arn}
-              Effect: Allow
-            - Action:
-              - 's3:*'
-              Resource:
-              - !Sub ${StagingBucket.Arn}/*
-              Effect: Allow
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "codepipeline:*"
+                Effect: Allow
+                Resource:
+                  - "*"
+              - Action:
+                  - "s3:GetBucketPolicy"
+                  - "s3:GetBucketVersioning"
+                Resource:
+                  - !Sub ${StagingBucket.Arn}
+                Effect: Allow
+              - Action:
+                  - "s3:*"
+                Resource:
+                  - !Sub ${StagingBucket.Arn}/*
+                Effect: Allow
 
   CodeBuildTestRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub SSOSync-CodeBuild-Test-${AWS::Region}
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal:
-            Service: [codebuild.amazonaws.com]
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              Service: [codebuild.amazonaws.com]
       Path: /
       Policies:
         - PolicyName: !Sub SSOSync-CodeBuild-Test-${AWS::Region}
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-            - Action:
-              - 'logs:CreateLogGroup'
-              - 'logs:CreateLogStream'
-              - 'logs:PutLogEvents'
-              Effect: Allow
-              Resource: '*'
-            - Action:
-              - 'kms:DescribeKey'
-              - 'kms:GenerateDataKey*'
-              - 'kms:Encrypt'
-              - 'kms:ReEncrypt*'
-              - 'kms:Decrypt'
-              Effect: Allow
-              Resource:
-              - !GetAtt ArtifactBucketKey.Arn
-            - Action: 's3:*'
-              Effect: Allow
-              Resource:
-              - !Sub ${ArtifactBucket.Arn}/*
-            - Action:
-              -  'lambda:invokeFunction'
-              Effect: Allow
-              Resource: '*'
-            - Action:
-                - "identitystore:DeleteUser"
-                - "identitystore:CreateGroup"
-                - "identitystore:CreateGroupMembership"
-                - "identitystore:ListGroups"
-                - "identitystore:ListUsers"
-                - "identitystore:ListGroupMemberships"
-                - "identitystore:IsMemberInGroups"
-                - "identitystore:GetGroupMembershipId"
-                - "identitystore:DeleteGroupMembership"
-                - "identitystore:DeleteGroup"
-              Effect: Allow
-              Resource: '*'
-            - Action:
-                - "secretsmanager:Get*"
-              Resource:
-                - "*"
-              Effect: Allow
+              - Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: Allow
+                Resource: "*"
+              - Action:
+                  - "kms:DescribeKey"
+                  - "kms:GenerateDataKey*"
+                  - "kms:Encrypt"
+                  - "kms:ReEncrypt*"
+                  - "kms:Decrypt"
+                Effect: Allow
+                Resource:
+                  - !GetAtt ArtifactBucketKey.Arn
+              - Action: "s3:*"
+                Effect: Allow
+                Resource:
+                  - !Sub ${ArtifactBucket.Arn}/*
+              - Action:
+                  - "lambda:invokeFunction"
+                Effect: Allow
+                Resource: "*"
+              - Action:
+                  - "identitystore:DeleteUser"
+                  - "identitystore:CreateGroup"
+                  - "identitystore:CreateGroupMembership"
+                  - "identitystore:ListGroups"
+                  - "identitystore:ListUsers"
+                  - "identitystore:ListGroupMemberships"
+                  - "identitystore:IsMemberInGroups"
+                  - "identitystore:GetGroupMembershipId"
+                  - "identitystore:DeleteGroupMembership"
+                  - "identitystore:DeleteGroup"
+                Effect: Allow
+                Resource: "*"
+              - Action:
+                  - "secretsmanager:Get*"
+                Resource:
+                  - "*"
+                Effect: Allow
 
   CloudFormationDeployerRole:
     Type: AWS::IAM::Role
-    Properties: 
+    Properties:
       RoleName: !Sub SSOSync-CloudFormationDeployerRole-${AWS::Region}
-      AssumeRolePolicyDocument: 
+      AssumeRolePolicyDocument:
         Statement:
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal:  
-            Service: [cloudformation.amazonaws.com] 
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal:
-            AWS: !Ref AWS::AccountId
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal:
-            Service: [codepipeline.amazonaws.com]
-        Version: '2012-10-17'
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              Service: [cloudformation.amazonaws.com]
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              AWS: !Ref AWS::AccountId
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              Service: [codepipeline.amazonaws.com]
+        Version: "2012-10-17"
       Path: /
-      Policies: 
+      Policies:
         - PolicyName: CloudFormation-Deployer-Policy
-          PolicyDocument:                     
-            Version: '2012-10-17'
+          PolicyDocument:
+            Version: "2012-10-17"
             Statement:
-            - Action: '*'
-              Effect: Allow
-              Resource: '*'
+              - Action: "*"
+                Effect: Allow
+                Resource: "*"
 
 Outputs:
-
   ManagementAccount:
     Condition: DeployManagement
     Description: "The account id"
