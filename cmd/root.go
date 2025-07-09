@@ -28,6 +28,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/codepipeline"
 	"github.com/aws/aws-sdk-go-v2/service/codepipeline/types"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-secretsmanager-caching-go/v2/secretcache"
 	"github.com/awslabs/ssosync/internal"
 	"github.com/awslabs/ssosync/internal/config"
 	"github.com/pkg/errors"
@@ -44,6 +46,8 @@ var (
 )
 
 var cfg *config.Config
+var awsConfig aws.Config
+var codePipelineClient *codepipeline.Client
 
 var rootCmd = &cobra.Command{
 	Version: "dev",
@@ -83,16 +87,6 @@ func Handler(ctx context.Context, event events.CodePipelineEvent) (string, error
 	log.Debug(event)
 	err := rootCmd.Execute()
 
-	// Load AWS SDK configuration
-	cfg2, err2 := aws_config.LoadDefaultConfig(ctx, aws_config.WithRegion(cfg.Region))
-	if err2 != nil {
-		log.Fatal(errors.Wrap(err2, "Failed to load AWS SDK configuration").Error())
-		return "Failure", err2
-	}
-
-	// Create CodePipeline client
-	cpl := codepipeline.NewFromConfig(cfg2)
-
 	cfg.IsLambdaRunningInCodePipeline = len(event.CodePipelineJob.ID) > 0
 
 	if cfg.IsLambdaRunningInCodePipeline {
@@ -113,7 +107,7 @@ func Handler(ctx context.Context, event events.CodePipelineEvent) (string, error
 					Type:    types.FailureTypeJobFailed,
 				},
 			}
-			_, cplErr := cpl.PutJobFailureResult(ctx, cplFailure)
+			_, cplErr := codePipelineClient.PutJobFailureResult(ctx, cplFailure)
 			if cplErr != nil {
 				log.Fatal(errors.Wrap(err, "Failed to update CodePipeline jobID status").Error())
 			}
@@ -129,7 +123,7 @@ func Handler(ctx context.Context, event events.CodePipelineEvent) (string, error
 		cplSuccess := &codepipeline.PutJobSuccessResultInput{
 			JobId: aws.String(jobID),
 		}
-		_, cplErr := cpl.PutJobSuccessResult(ctx, cplSuccess)
+		_, cplErr := codePipelineClient.PutJobSuccessResult(ctx, cplSuccess)
 		if cplErr != nil {
 			log.Fatal(errors.Wrap(err, "Failed to update CodePipeline jobID status").Error())
 		}
@@ -202,102 +196,111 @@ func initConfig() {
 
 }
 
+var parameterCache = make(map[string]string)
+var secretCache *secretcache.Cache
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func configLambda() {
 	ctx := context.Background()
 
-	// Load AWS SDK configuration
-	cfg2, err := aws_config.LoadDefaultConfig(ctx, aws_config.WithRegion(cfg.Region))
+	// Load AWS SDK configuration once
+	var err error
+	awsConfig, err = aws_config.LoadDefaultConfig(ctx, aws_config.WithRegion(cfg.Region))
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "Failed to load AWS SDK configuration").Error())
 	}
 
-	// Create SecretsManager client
-	svc := secretsmanager.NewFromConfig(cfg2)
-	secrets := config.NewSecrets(svc)
-
-	unwrap, err := secrets.GoogleAdminEmail(os.Getenv("GOOGLE_ADMIN"))
+	// Create clients once
+	ssmClient := ssm.NewFromConfig(awsConfig)
+	codePipelineClient = codepipeline.NewFromConfig(awsConfig)
+	secretCache, err = secretcache.New(func(c *secretcache.Cache) {
+		c.Client = secretsmanager.NewFromConfig(awsConfig)
+	})
 	if err != nil {
-		log.Fatal(errors.Wrap(err, "cannot read config: GOOGLE_ADMIN").Error())
+		log.Fatal(errors.Wrap(err, "Failed to create secret cache").Error())
 	}
-	cfg.GoogleAdmin = unwrap
 
-	unwrap, err = secrets.GoogleCredentials(os.Getenv("GOOGLE_CREDENTIALS"))
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "cannot read config: GOOGLE_CREDENTIALS").Error())
-	}
-	cfg.GoogleCredentials = unwrap
+	// Get values from SSM Parameter Store with caching
+	cfg.GoogleAdmin = getParameterWithCache(ctx, ssmClient, getEnv("GOOGLE_ADMIN", "/SSOSync/google/AdminEmail"))
+	cfg.SCIMEndpoint = getParameterWithCache(ctx, ssmClient, getEnv("SCIM_ENDPOINT", "/SSOSync/aws/SCIMEndpointUrl"))
+	cfg.IdentityStoreID = getParameterWithCache(ctx, ssmClient, getEnv("IDENTITY_STORE_ID", "/SSOSync/aws/IdentityStoreId"))
+	cfg.Region = getParameterWithCache(ctx, ssmClient, getEnv("REGION", "/SSOSync/aws/Region"))
 
-	unwrap, err = secrets.SCIMAccessToken(os.Getenv("SCIM_ACCESS_TOKEN"))
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "cannot read config: SCIM_ACCESS_TOKEN").Error())
-	}
-	cfg.SCIMAccessToken = unwrap
+	// Get sensitive values from Secrets Manager with caching
+	cfg.GoogleCredentials = getSecretFromCache(getEnv("GOOGLE_CREDENTIALS", "ssosync/google/ServiceAccountCredentials"))
+	cfg.SCIMAccessToken = getSecretFromCache(getEnv("SCIM_ACCESS_TOKEN", "ssosync/aws/SCIMAccessToken"))
 
-	unwrap, err = secrets.SCIMEndpointURL(os.Getenv("SCIM_ENDPOINT"))
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "cannot read config: SCIM_ENDPOINT").Error())
-	}
-	cfg.SCIMEndpoint = unwrap
-
-	unwrap, err = secrets.Region(os.Getenv("REGION"))
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "cannot read config: REGION").Error())
-	}
-	cfg.Region = unwrap
-
-	unwrap, err = secrets.IdentityStoreID(os.Getenv("IDENTITY_STORE_ID"))
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "cannot read config: IDENTITY_STORE_ID").Error())
-	}
-	cfg.IdentityStoreID = unwrap
-
-	unwrap = os.Getenv("LOG_LEVEL")
-	if len([]rune(unwrap)) != 0 {
+	// Handle environment variables for other settings
+	if unwrap := os.Getenv("LOG_LEVEL"); unwrap != "" {
 		cfg.LogLevel = unwrap
 		log.WithField("LogLevel", unwrap).Debug("from EnvVar")
 	}
 
-	unwrap = os.Getenv("LOG_FORMAT")
-	if len([]rune(unwrap)) != 0 {
+	if unwrap := os.Getenv("LOG_FORMAT"); unwrap != "" {
 		cfg.LogFormat = unwrap
-		log.WithField("LogFormay", unwrap).Debug("from EnvVar")
+		log.WithField("LogFormat", unwrap).Debug("from EnvVar")
 	}
 
-	unwrap = os.Getenv("SYNC_METHOD")
-	if len([]rune(unwrap)) != 0 {
+	if unwrap := os.Getenv("SYNC_METHOD"); unwrap != "" {
 		cfg.SyncMethod = unwrap
 		log.WithField("SyncMethod", unwrap).Debug("from EnvVar")
 	}
 
-	unwrap = os.Getenv("USER_MATCH")
-	if len([]rune(unwrap)) != 0 {
+	if unwrap := os.Getenv("USER_MATCH"); unwrap != "" {
 		cfg.UserMatch = unwrap
 		log.WithField("UserMatch", unwrap).Debug("from EnvVar")
 	}
 
-	unwrap = os.Getenv("GROUP_MATCH")
-	if len([]rune(unwrap)) != 0 {
+	if unwrap := os.Getenv("GROUP_MATCH"); unwrap != "" {
 		cfg.GroupMatch = unwrap
 		log.WithField("GroupMatch", unwrap).Debug("from EnvVar")
 	}
 
-	unwrap = os.Getenv("IGNORE_GROUPS")
-	if len([]rune(unwrap)) != 0 {
+	if unwrap := os.Getenv("IGNORE_GROUPS"); unwrap != "" {
 		cfg.IgnoreGroups = strings.Split(unwrap, ",")
 		log.WithField("IgnoreGroups", unwrap).Debug("from EnvVar")
 	}
 
-	unwrap = os.Getenv("IGNORE_USERS")
-	if len([]rune(unwrap)) != 0 {
+	if unwrap := os.Getenv("IGNORE_USERS"); unwrap != "" {
 		cfg.IgnoreUsers = strings.Split(unwrap, ",")
 		log.WithField("IgnoreUsers", unwrap).Debug("from EnvVar")
 	}
 
-	unwrap = os.Getenv("INCLUDE_GROUPS")
-	if len([]rune(unwrap)) != 0 {
+	if unwrap := os.Getenv("INCLUDE_GROUPS"); unwrap != "" {
 		cfg.IncludeGroups = strings.Split(unwrap, ",")
 		log.WithField("IncludeGroups", unwrap).Debug("from EnvVar")
 	}
+}
+
+func getParameterWithCache(ctx context.Context, client *ssm.Client, paramName string) string {
+	if value, exists := parameterCache[paramName]; exists {
+		return value
+	}
+
+	resp, err := client.GetParameter(ctx, &ssm.GetParameterInput{
+		Name: aws.String(paramName),
+	})
+	if err != nil {
+		log.Fatal(errors.Wrap(err, fmt.Sprintf("cannot read parameter: %s", paramName)).Error())
+	}
+
+	value := *resp.Parameter.Value
+	parameterCache[paramName] = value
+	return value
+}
+
+func getSecretFromCache(secretName string) string {
+	value, err := secretCache.GetSecretString(secretName)
+	if err != nil {
+		log.Fatal(errors.Wrap(err, fmt.Sprintf("cannot read secret: %s", secretName)).Error())
+	}
+	return value
 }
 
 func addFlags(_ *cobra.Command, cfg *config.Config) {

@@ -39,6 +39,14 @@
         "go.formatFlags": [
           "fmt",
           "--stdin"
+        ],
+        "json.schemas": [
+          {
+            "fileMatch": [
+              "/sar-template.json"
+            ],
+            "url": "https://raw.githubusercontent.com/aws/serverless-application-model/refs/heads/master/samtranslator/validator/sam_schema/schema.json"
+          }
         ]
       }
     }
@@ -72,7 +80,7 @@
   ],
   "remoteUser": "vscode",
   "containerEnv": {
-    " GOPROXY": "direct"
+    "GOPROXY": "direct"
   },
   "postCreateCommand": "sudo chmod auog+rwx /home/vscode/.cache -R && npm install -g npm && npm install -g repolinter"
 }

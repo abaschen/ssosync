@@ -39,3 +39,6 @@ staging.yaml
 *.orig
 *.rej
 *.swo
+/bootstrap
+.pnpm-store/
+node_modules/

@@ -8,7 +8,6 @@ env:
     Status: '"InProgress"'
 
 phases:
-
   pre_build:
     commands:
       # Print all environment variables (handy for AWS CodeBuild logs
@@ -16,29 +15,25 @@ phases:
 
   build:
     commands:
-      # Create parameters
-      - export AppVersion="${GitTag#v}-${GitVersionHash}"
-
       # Copy in the tests
       - cp -r cicd/tests ./
 
       # Copy in the stack and params templates
       - mkdir deploy
-      - cp cicd/deploy_patterns/singlestack/namedfunction.yml ./deploy/namedfunction.yml
-      - cp cicd/deploy_patterns/singlestack/unnamedfunction.yml ./deploy/unnamedfunction.yml
+      - jq 'del(.Outputs)' cicd/deploy_patterns/stack.json > ./deploy/namedfunction.json
+      - jq 'del(.Resources.Properties.Parameters.FunctionName)' cicd/deploy_patterns/stack.json > ./deploy/unnamedfunction.json
 
       # Update params with the values for this run for a developer account
       - |
         jq -n \
-        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\", \"GoogleAdminEmailArn\": \"$SecretGoogleAdminEmail\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMEndpointUrlArn\": \"$SecretSCIMEndpoint\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"RegionArn\": \"$SecretRegion\", \"IdentityStoreIdArn\": \"$SecretIdentityStoreID\", \"GroupMatch\": \"name:AWS*\"}" \
+        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"GroupMatch\": \"name:AWS*\"}" \
         --argjson StackPolicy "{\"Statement\":[{\"Effect\": \"Allow\", \"NotAction\": \"Update:Delete\", \"Principal\": \"*\", \"Resource\": \"*\"}]}" \
         '$ARGS.named' > ./deploy/singlestack.json
       - cat ./deploy/singlestack.json
 
-
   post_build:
     commands:
-      # zip up the content of TESTS 
+      # zip up the content of TESTS
       - zip -r singlestack.zip ./tests
       - zip -r singlestack.zip ./deploy
 

@@ -29,6 +29,7 @@ import (
 	"github.com/awslabs/ssosync/internal/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 type nopCloser struct {
@@ -96,11 +97,11 @@ func TestSendRequestBadUrl(t *testing.T) {
 		Token:    "bearerToken",
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	cc := c.(*client)
 
 	r, err := cc.get(":foo", nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, r)
 }
 
@@ -116,11 +117,11 @@ func TestSendRequestBadStatusCode(t *testing.T) {
 		Token:    "bearerToken",
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	cc := c.(*client)
 
 	r, err := cc.get(":foo", nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, r)
 
 }
@@ -133,11 +134,11 @@ func TestPrepareRequest(t *testing.T) {
 		Token:    "bearerToken",
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	cc := c.(*client)
 
 	r, err := cc.prepareRequest(http.MethodGet, "/abcd", nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Bearer bearerToken", r.Header.Get("Authorization"))
 	assert.Equal(t, "application/scim+json", r.Header.Get("Content-Type"))
 	assert.Equal(t, http.MethodGet, r.Method)
@@ -148,8 +149,10 @@ func TestPrepareRequest(t *testing.T) {
 func TestPost(t *testing.T) {
 	x := mocks.NewMockClient(t)
 	body := &interfaces.User{Schemas: nil, Username: "", DisplayName: "", Active: false, Emails: nil, Addresses: nil}
-	by, _ := json.Marshal(body)
-	json.Unmarshal(by, body)
+	by, err := json.Marshal(body)
+	require.NoError(t, err)
+	err = json.Unmarshal(by, body)
+	require.NoError(t, err)
 	by, _ = json.Marshal(body)
 
 	x.EXPECT().Do(mock.MatchedBy(requestMatcher(http.MethodPost, "/foo", "", by))).Return(&http.Response{
@@ -163,18 +166,20 @@ func TestPost(t *testing.T) {
 		Token:    "bearerToken",
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	cc := c.(*client)
 
 	_, err = cc.post("/foo", body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestPut(t *testing.T) {
 	x := mocks.NewMockClient(t)
 	body := &interfaces.User{Schemas: nil, Username: "", DisplayName: "", Active: false, Emails: nil, Addresses: nil}
-	by, _ := json.Marshal(body)
-	json.Unmarshal(by, body)
+	by, err := json.Marshal(body)
+	require.NoError(t, err)
+	err = json.Unmarshal(by, body)
+	require.NoError(t, err)
 	by, _ = json.Marshal(body)
 
 	x.EXPECT().Do(mock.MatchedBy(requestMatcher(http.MethodPut, "/foo", "", by))).Return(&http.Response{
@@ -188,11 +193,11 @@ func TestPut(t *testing.T) {
 		Token:    "bearerToken",
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	cc := c.(*client)
 
 	_, err = cc.put("/foo", body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestGet(t *testing.T) {
@@ -203,11 +208,11 @@ func TestGet(t *testing.T) {
 		Token:    "bearerToken",
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	cc := c.(*client)
 
 	r, err := cc.prepareRequest(http.MethodGet, "/abcd", nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Bearer bearerToken", r.Header.Get("Authorization"))
 	assert.Equal(t, http.MethodGet, r.Method)
 	assert.Equal(t, "https://scim.example.com/abcd", r.URL.String())
@@ -223,7 +228,7 @@ func TestGet(t *testing.T) {
 	_, err = cc.get("/abcd", func(r *http.Request) {
 		r.URL.RawQuery = "filter=" + url.QueryEscape(filter)
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestClient_FindUserByEmail(t *testing.T) {
@@ -260,18 +265,18 @@ func TestClient_FindUserByEmail(t *testing.T) {
 		Token:    "bearerToken",
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	cc := c.(*client)
 
 	u, err := cc.FindUserByEmail("test@example.com")
-	assert.EqualError(t, err, ErrUserNotFound.Error())
+	require.EqualError(t, err, ErrUserNotFound.Error())
 	assert.Nil(t, u)
 
 	// True
 
 	u, err = c.FindUserByEmail("test@example.com")
 	assert.NotNil(t, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestClient_FindGroupByDisplayName(t *testing.T) {
@@ -306,15 +311,15 @@ func TestClient_FindGroupByDisplayName(t *testing.T) {
 		Token:    "bearerToken",
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	g, err := c.FindGroupByDisplayName("testGroup")
 	assert.Nil(t, g)
-	assert.EqualError(t, err, ErrGroupNotFound.Error())
+	require.EqualError(t, err, ErrGroupNotFound.Error())
 
 	g, err = c.FindGroupByDisplayName("testGroup")
 	assert.NotNil(t, g)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestClient_CreateUser(t *testing.T) {
@@ -322,9 +327,14 @@ func TestClient_CreateUser(t *testing.T) {
 	nuResult := *nu
 	nuResult.ID = "userId"
 	// trick to ensure after marshalling we have the correct string
-	requestJSON, _ := json.Marshal(nu)
-	json.Unmarshal(requestJSON, nu)
-	requestJSON, _ = json.Marshal(nu)
+	requestJSON, err := json.Marshal(nu)
+	require.NoError(t, err)
+
+	err = json.Unmarshal(requestJSON, nu)
+	require.NoError(t, err)
+
+	requestJSON, err = json.Marshal(nu)
+	require.NoError(t, err)
 
 	response, _ := json.Marshal(nuResult)
 
@@ -340,11 +350,11 @@ func TestClient_CreateUser(t *testing.T) {
 		Token:    "bearerToken",
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	r, err := c.CreateUser(nu)
 	assert.NotNil(t, r)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	if r != nil {
 		assert.Equal(t, *r, nuResult)
@@ -355,10 +365,17 @@ func TestClient_UpdateUser(t *testing.T) {
 	nu := UpdateUser("userId", "Lee", "Packham", "test@example.com", true)
 	nuResult := *nu
 	nuResult.ID = "userId"
-	requestJSON, _ := json.Marshal(nu)
-	json.Unmarshal(requestJSON, nu)
-	requestJSON, _ = json.Marshal(nu)
-	response, _ := json.Marshal(nuResult)
+	requestJSON, err := json.Marshal(nu)
+	require.NoError(t, err)
+
+	err = json.Unmarshal(requestJSON, nu)
+	require.NoError(t, err)
+
+	requestJSON, err = json.Marshal(nu)
+	require.NoError(t, err)
+
+	response, err := json.Marshal(nuResult)
+	require.NoError(t, err)
 
 	x := mocks.NewMockClient(t)
 
@@ -366,7 +383,7 @@ func TestClient_UpdateUser(t *testing.T) {
 		Endpoint: baseUrl,
 		Token:    "bearerToken",
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	x.EXPECT().Do(mock.MatchedBy(requestMatcher(http.MethodPut, "/Users/userId", "", requestJSON))).Times(1).Return(&http.Response{
 		Status:     "OK",
@@ -376,7 +393,7 @@ func TestClient_UpdateUser(t *testing.T) {
 
 	r, err := c.UpdateUser(nu)
 	assert.NotNil(t, r)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	if r != nil {
 		assert.Equal(t, *r, nuResult)

@@ -22,9 +22,9 @@ import (
 
 func TestNewUser(t *testing.T) {
 	u := NewUser("Lee", "Packham", "test@email.com", true)
-	assert.Equal(t, u.Name.GivenName, "Lee")
-	assert.Equal(t, u.Name.FamilyName, "Packham")
-	assert.Equal(t, u.DisplayName, "Lee Packham")
+	assert.Equal(t, "Lee", u.Name.GivenName)
+	assert.Equal(t, "Packham", u.Name.FamilyName)
+	assert.Equal(t, "Lee Packham", u.DisplayName)
 	assert.Len(t, u.Emails, 1)
 
 	assert.Equal(t, "test@email.com", u.Emails[0].Value)
