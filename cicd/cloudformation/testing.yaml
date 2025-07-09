@@ -199,7 +199,7 @@ Resources:
                 StackName: TestAccountExecution
                 RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
                 TemplateConfiguration: "Tests::deploy/lambda.json"
-                TemplatePath: !Sub "Tests::deploy/stack.yml"
+                TemplatePath: !Sub "Tests::deploy/stack.json"
               InputArtifacts:
                 - Name: Tests
               RunOrder: 1
@@ -231,7 +231,7 @@ Resources:
                 StackName: TestAccountExecution
                 RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
                 TemplateConfiguration: "Tests::deploy/cli.json"
-                TemplatePath: !Sub "Tests::deploy/stack.yml"
+                TemplatePath: !Sub "Tests::deploy/stack.json"
               InputArtifacts:
                 - Name: Tests
               RunOrder: 1
@@ -265,7 +265,7 @@ Resources:
                   StackName: TestAccountExecution
                   RoleArn: !GetAtt [CloudFormationDeployerRole, Arn]
                   TemplateConfiguration: "Tests::deploy/codepipeline.json"
-                  TemplatePath: !Sub "Tests::deploy/stack.yml"
+                  TemplatePath: !Sub "Tests::deploy/stack.json"
                 InputArtifacts:
                   - Name: Tests
                 RunOrder: 1
