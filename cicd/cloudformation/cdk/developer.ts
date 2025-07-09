@@ -283,7 +283,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       runOrder: 2,
       stackName: 'TestAccountExecution',
       replaceOnFailure: true,
-      templatePath: testsOutput.atPath('deploy/stack.yml'),
+      templatePath: testsOutput.atPath('deploy/stack.json'),
       adminPermissions: true,
       cfnCapabilities: [
         cdk.CfnCapabilities.AUTO_EXPAND,
