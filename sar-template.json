@@ -103,6 +103,18 @@
             "Default": "",
             "AllowedPattern": "(?!.*\\s)|(\\d{12})|(arn:aws:secretsmanager:((us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\\d):[0-9]{8,12}:secret:[a-zA-Z0-9/_+=.@-]{1,512})(,arn:aws:secretsmanager:((us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\\d):[0-9]{8,12}:secret:[a-zA-Z0-9/_+=.@-]{1,512}){5}(,arn:aws:kms:((us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\\d):[0-9]{12}:key/[a-zA-Z0-9/_+=.@-]{1,512})?"
         },
+        "ParameterPrefix": {
+            "Type": "String",
+            "Description": "[optional] specify the prefix for the parameters\n",
+            "Default": "SSOSync",
+            "AllowedPattern": "[a-zA-Z][a-zA-Z0-9]{1,14}"
+        },
+        "SecretPrefix": {
+            "Type": "String",
+            "Description": "[optional] specify the prefix for the secrets\n",
+            "Default": "ssosync",
+            "AllowedPattern": "[a-zA-Z][a-zA-Z0-9]{1,14}"
+        },
         "FunctionName": {
             "Type": "String",
             "Description": "[optional] Specify the name you want to us for this deployment, if you want to trigger SSOSync as part of a pipeline or other automation this will ensure a consistent arn to call. leave empty for default behaviour.\n",
@@ -1477,7 +1489,7 @@
             "Type": "AWS::SecretsManager::Secret",
             "Condition": "CreateSecrets",
             "Properties": {
-                "Name": "ssosync/google/ServiceAccountCredentials",
+                "Name": { "Fn::Sub": "${SecretPrefix}/google/ServiceAccountCredentials" },
                 "SecretString": {
                     "Ref": "GoogleCredentials"
                 },
@@ -1522,7 +1534,7 @@
             "Type": "AWS::SSM::Parameter",
             "Condition": "CreateSecrets",
             "Properties": {
-                "Name": "/SSOSync/google/AdminEmail",
+                "Name": { "Fn::Sub": "/${ParameterPrefix}/google/AdminEmail" },
                 "Type": "String",
                 "Value": {
                     "Ref": "GoogleAdminEmail"
@@ -1533,7 +1545,7 @@
             "Type": "AWS::SSM::Parameter",
             "Condition": "CreateSecrets",
             "Properties": {
-                "Name": "/SSOSync/aws/SCIMEndpointUrl",
+                "Name": { "Fn::Sub": "/${ParameterPrefix}/aws/SCIMEndpointUrl"},
                 "Type": "String",
                 "Value": {
                     "Ref": "SCIMEndpointUrl"
@@ -1544,7 +1556,7 @@
             "Type": "AWS::SecretsManager::Secret",
             "Condition": "CreateSecrets",
             "Properties": {
-                "Name": "ssosync/aws/SCIMAccessToken",
+                "Name": { "Fn::Sub": "${SecretPrefix}/aws/SCIMAccessToken"},
                 "SecretString": {
                     "Ref": "SCIMEndpointAccessToken"
                 },
@@ -1589,7 +1601,7 @@
             "Type": "AWS::SSM::Parameter",
             "Condition": "CreateSecrets",
             "Properties": {
-                "Name": "/SSOSync/aws/Region",
+                "Name": { "Fn::Sub": "/${ParameterPrefix}/aws/Region"},
                 "Type": "String",
                 "Value": {
                     "Ref": "Region"
@@ -1600,7 +1612,7 @@
             "Type": "AWS::SSM::Parameter",
             "Condition": "CreateSecrets",
             "Properties": {
-                "Name": "/SSOSync/aws/IdentityStoreId",
+                "Name": { "Fn::Sub": "/${ParameterPrefix}/aws/IdentityStoreId"},
                 "Type": "String",
                 "Value": {
                     "Ref": "IdentityStoreID"
