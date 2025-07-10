@@ -294,6 +294,8 @@ export class SSOSyncPipelineStack extends cdk.Stack {
         AppArn: `arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging`,
         AppVersion: actionBuild_goBuild.variable("AppVersion"),
 
+        SecretPrefix: "ssosync-staging",
+        ParameterPrefix: "SSOSync-Staging",
         GoogleCredentialsArn: SecretNames.GoogleServiceCredentialsSecret,
         SCIMAccessTokenArn: SecretNames.SCIMAccessTokenSecret,
         GoogleAdminEmailParam: ParameterNames.GoogleAdminEmailParam,
