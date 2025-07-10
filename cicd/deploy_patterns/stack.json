@@ -94,7 +94,7 @@
                         "Fn::Join": [
                             "",
                             [
-                                "{{resolve:ssm:",
+                                "{{resolve:secretsmanager:",
                                 {
                                     "Ref": "SCIMAccessTokenArn"
                                 },
