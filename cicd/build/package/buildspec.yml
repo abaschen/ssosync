@@ -26,10 +26,10 @@ phases:
     commands:
       # Create staging & release variants of the sar-template.json
       - jq '.Metadata["AWS::ServerlessRepo::Application"].Name = "SSOSync-Staging"' "${SAR_TEMPLATE}" > ./staging.json
-      - sam package --no-progressbar --template-file staging.json --s3-bucket ${S3Bucket} --output-template-file packaged-staging.yaml
+      - sam package --force-upload --no-progressbar --template-file staging.json --s3-bucket ${S3Bucket} --output-template-file packaged-staging.yaml
 
       - jq '.Metadata["AWS::ServerlessRepo::Application"].Name = "SSOSync"' "${SAR_TEMPLATE}" > ./release.json
-      - sam package --no-progressbar --template-file release.json --s3-bucket ${S3Bucket} --output-template-file packaged-release.yaml
+      - sam package --force-upload --no-progressbar --template-file release.json --s3-bucket ${S3Bucket} --output-template-file packaged-release.yaml
 
       - ls packaged-staging.yaml
       - ls packaged-release.yaml
