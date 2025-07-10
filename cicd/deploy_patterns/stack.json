@@ -13,6 +13,18 @@
             "Default": "v1.0.0-rc.10",
             "Type": "String"
         },
+        "ParameterPrefix": {
+            "Type": "String",
+            "Description": "[optional] specify the prefix for the parameters\n",
+            "Default": "SSOSync",
+            "AllowedPattern": "[a-zA-Z][a-zA-Z0-9]{1,14}"
+        },
+        "SecretPrefix": {
+            "Type": "String",
+            "Description": "[optional] specify the prefix for the secrets\n",
+            "Default": "ssosync",
+            "AllowedPattern": "[a-zA-Z][a-zA-Z0-9]{1,14}"
+        },
         "GoogleCredentialsArn": {
             "Type": "String"
         },
