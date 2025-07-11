@@ -1489,7 +1489,7 @@
             "Type": "AWS::SecretsManager::Secret",
             "Condition": "CreateSecrets",
             "Properties": {
-                "Name": { "Fn::Sub": "${SecretPrefix}/google/ServiceAccountCredentials" },
+                "Name": { "Fn::Sub": "${SecretPrefix}google/ServiceAccountCredentials" },
                 "SecretString": {
                     "Ref": "GoogleCredentials"
                 },
@@ -1534,7 +1534,7 @@
             "Type": "AWS::SSM::Parameter",
             "Condition": "CreateSecrets",
             "Properties": {
-                "Name": { "Fn::Sub": "/${ParameterPrefix}/google/AdminEmail" },
+                "Name": { "Fn::Sub": "${ParameterPrefix}google/AdminEmail" },
                 "Type": "String",
                 "Value": {
                     "Ref": "GoogleAdminEmail"
@@ -1545,7 +1545,7 @@
             "Type": "AWS::SSM::Parameter",
             "Condition": "CreateSecrets",
             "Properties": {
-                "Name": { "Fn::Sub": "/${ParameterPrefix}/aws/SCIMEndpointUrl"},
+                "Name": { "Fn::Sub": "${ParameterPrefix}aws/SCIMEndpointUrl"},
                 "Type": "String",
                 "Value": {
                     "Ref": "SCIMEndpointUrl"
@@ -1556,7 +1556,7 @@
             "Type": "AWS::SecretsManager::Secret",
             "Condition": "CreateSecrets",
             "Properties": {
-                "Name": { "Fn::Sub": "${SecretPrefix}/aws/SCIMAccessToken"},
+                "Name": { "Fn::Sub": "${SecretPrefix}aws/SCIMAccessToken"},
                 "SecretString": {
                     "Ref": "SCIMEndpointAccessToken"
                 },
@@ -1601,7 +1601,7 @@
             "Type": "AWS::SSM::Parameter",
             "Condition": "CreateSecrets",
             "Properties": {
-                "Name": { "Fn::Sub": "/${ParameterPrefix}/aws/Region"},
+                "Name": { "Fn::Sub": "${ParameterPrefix}aws/Region"},
                 "Type": "String",
                 "Value": {
                     "Ref": "Region"
@@ -1612,7 +1612,7 @@
             "Type": "AWS::SSM::Parameter",
             "Condition": "CreateSecrets",
             "Properties": {
-                "Name": { "Fn::Sub": "/${ParameterPrefix}/aws/IdentityStoreId"},
+                "Name": { "Fn::Sub": "${ParameterPrefix}aws/IdentityStoreId"},
                 "Type": "String",
                 "Value": {
                     "Ref": "IdentityStoreID"
