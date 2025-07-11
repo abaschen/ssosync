@@ -267,6 +267,9 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       }
     });
 
+    const stagingFunctionName = "TestAccountExecution-SSOSyncFunction-Staging";
+    const importedSSOSyncFunction = Function.fromFunctionName(this, 'SSOSyncFunction', stagingFunctionName);
+
     // Deploy Stage
     const testsOutput = new codepipeline.Artifact('Tests');
 
@@ -294,6 +297,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
         AppArn: `arn:aws:serverlessrepo:${this.region}:${this.account}:applications/SSOSync-Staging`,
         AppVersion: actionBuild_goBuild.variable("AppVersion"),
 
+        FunctionName: stagingFunctionName,
         SecretPrefix: "ssosync-staging/",
         ParameterPrefix: "/SSOSync-Staging/",
         GoogleCredentialsArn: SecretNames.GoogleServiceCredentialsSecret,
@@ -303,7 +307,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
         IdentityStoreIdParam: ParameterNames.IdentityStoreIdParam,
         RegionParam: ParameterNames.SecretRegionParam
       },
-      extraInputs: [testsOutput],
+      extraInputs: [testsOutput]
     })
 
     // Smoke Tests Stage
@@ -316,6 +320,9 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       input: sourceOutput,
       extraInputs: [testsOutput],
       outputs: [smokeLambdaOutput],
+      environmentVariables: {
+        FunctionName: { value: stagingFunctionName }
+      }
     });
     const actionSmokeTests_CLI = new codepipeline_actions.CodeBuildAction({
       actionName: 'CLI',
@@ -324,11 +331,12 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       extraInputs: [testsOutput],
       outputs: [smokeCLIOutput],
     });
+
     const actionSmokeTests_CodePipeline = new codepipeline_actions.LambdaInvokeAction({
       actionName: 'CodePipeline',
-      lambda: Function.fromFunctionName(this, 'SSOSyncFunction', 'SSOSyncFunction'),
+      lambda: importedSSOSyncFunction,
       inputs: [testsOutput],
-    })
+    });
 
 
     const actionCleanUp = new codepipeline_actions.CloudFormationDeleteStackAction({
@@ -418,6 +426,11 @@ export class SSOSyncPipelineStack extends cdk.Stack {
         actions: ["codestar-connections:UseConnection"],
         resources: [props.githubConnectionArn]
       }));
+    pipeline.addToRolePolicy(new iam.PolicyStatement({
+      //allow lambda invoke of SSOSyncFunction
+      actions: ['lambda:InvokeFunction'],
+      resources: [importedSSOSyncFunction.functionArn],
+    }));
 
 
     // buildApp.addToRolePolicy(

@@ -20,7 +20,8 @@ phases:
 
       # Copy in the stack and params templates
       - mkdir deploy
-      - jq 'del(.Outputs)' cicd/deploy_patterns/stack.json > ./deploy/stack.json
+      # no modifications here
+      - jq cicd/deploy_patterns/stack.json > ./deploy/stack.json
 
       # Update params with the values for this run for a developer account
       - |

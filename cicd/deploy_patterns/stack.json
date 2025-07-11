@@ -13,6 +13,11 @@
             "Default": "v1.0.0-rc.10",
             "Type": "String"
         },
+        "FunctionName": {
+            "Description": "The name of the Lambda function",
+            "Default": "",
+            "Type": "String"
+        },
         "ParameterPrefix": {
             "Type": "String",
             "Default": "/SSOSync/"
@@ -62,6 +67,9 @@
                     }
                 },
                 "Parameters": {
+                    "FunctionName": {
+                        "Ref": "FunctionName"
+                    },
                     "ParameterPrefix": { "Ref": "ParameterPrefix"},
                     "SecretPrefix": { "Ref": "SecretPrefix"},
                     "GoogleCredentials": {
