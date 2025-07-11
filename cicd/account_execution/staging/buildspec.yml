@@ -7,9 +7,10 @@ env:
     SCIMEndpoint: /SSOSync-Staging/aws/SCIMEndpointUrl
     IdentityStoreID: /SSOSync-Staging/aws/IdentityStoreId
     SSORegion: /SSOSync-Staging/aws/SSORegion
+    GoogleAdminEmail: /SSOSync-Staging/google/AdminEmail
     #WIFServiceAccountEmail: /SSOSync/google/WIFServiceAccountEmail
   secrets-manager:
-    SecretGoogleCredentials: ssosync-staging/google/credentials
+    SecretGoogleCredentials: ssosync-staging/google/ServiceAccountCredentials
     SecretSCIMAccessToken: ssosync-staging/aws/SCIMAccessToken
 
 phases:
@@ -29,21 +30,21 @@ phases:
       # Update params with the values for this run for a developer account
       - |
         jq -n \
-        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"GroupMatch\": \"name:AWS*,name=NestedGroups\"}" \
+        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"GoogleAdminEmail\": \"$GoogleAdminEmail\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"GroupMatch\": \"name:AWS*,name=NestedGroups\"}" \
         --argjson StackPolicy "{\"Statement\":[{\"Effect\": \"Allow\", \"NotAction\": \"Update:Delete\", \"Principal\": \"*\", \"Resource\": \"*\"}]}" \
         '$ARGS.named' > ./deploy/developer.json
       - cat ./deploy/developer.json
       # Update params with the values for this run for the management account
       - |
         jq -n \
-        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"GroupMatch\": \"name:Man*\"}" \
+        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"GoogleAdminEmail\": \"$GoogleAdminEmail\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"GroupMatch\": \"name:Man*\"}" \
         --argjson StackPolicy "{\"Statement\":[{\"Effect\": \"Allow\", \"NotAction\": \"Update:Delete\", \"Principal\": \"*\", \"Resource\": \"*\"}]}" \
         '$ARGS.named' > ./deploy/cli.json
       - cat ./deploy/cli.json
       # Update params with the values for this run for the delegated account
       - |
         jq -n \
-        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\",  \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"GroupMatch\": \"name:Del*\"}" \
+        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\",  \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"GoogleAdminEmail\": \"$GoogleAdminEmail\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"GroupMatch\": \"name:Del*\"}" \
         --argjson StackPolicy "{\"Statement\":[{\"Effect\": \"Allow\", \"NotAction\": \"Update:Delete\", \"Principal\": \"*\", \"Resource\": \"*\"}]}" \
         '$ARGS.named' > ./deploy/lambda.json
       - cat ./deploy/lambda.json
