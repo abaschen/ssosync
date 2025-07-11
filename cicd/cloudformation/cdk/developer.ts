@@ -156,7 +156,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
     buildPackage.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['ssm:Get*', 'ssm:PutParameter'],
-        resources: [`arn:aws:ssm:${SSOSync.imports.SSORegion()}:${this.account}:parameter/SSOSync-Staging/*`],
+        resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/SSOSync-Staging/*`],
       })
     );
 
@@ -280,6 +280,9 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       input: sourceOutput,
       extraInputs: [packageOutput, buildOutput],
       outputs: [testsOutput],
+      environmentVariables: {
+        KeyForSecrets: { value: SSOSync.imports.KeyForSecretsParam() }
+      }
     });
     const actionDeploy_StackDeploy = new codepipeline_actions.CloudFormationCreateUpdateStackAction({
       actionName: 'Deploy',
@@ -406,13 +409,13 @@ export class SSOSyncPipelineStack extends cdk.Stack {
     pipeline.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['ssm:Get*'],
-        resources: [`arn:aws:ssm:${SSOSync.imports.SSORegion()}:${this.account}:parameter/SSOSync-Staging/*`]
+        resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/SSOSync-Staging/*`]
       }));
     //grant read for secrets
     pipeline.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['secretsmanager:GetSecretValue'],
-        resources: [`arn:aws:secretsmanager:${SSOSync.imports.SSORegion()}:${this.account}:secret/ssosync-staging/*`]
+        resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret/ssosync-staging/*`]
       }));
     //grant access to KMS Key to decrypt secret
     pipeline.addToRolePolicy(
@@ -425,6 +428,23 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       new iam.PolicyStatement({
         actions: ["codestar-connections:UseConnection"],
         resources: [props.githubConnectionArn]
+      }));
+    buildStaging.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['ssm:Get*'],
+        resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/SSOSync-Staging/*`]
+      }));
+    //grant read for secrets
+    buildStaging.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret/ssosync-staging/*`]
+      }));
+    //grant access to KMS Key to decrypt secret
+    buildStaging.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['kms:Decrypt', 'kms:DescribeKey'],
+        resources: [SSOSync.imports.KeyForSecretsParam()]
       }));
     buildSmokeLambda.addToRolePolicy(new iam.PolicyStatement({
       //allow lambda invoke of SSOSyncFunction
