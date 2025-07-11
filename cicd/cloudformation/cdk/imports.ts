@@ -14,7 +14,7 @@ export const ParameterNames = {
     WIFEmailParam: `${ParamPrefix}/google/WIFServiceAccountEmail`,
     SCIMEndpointUrlParam: `${ParamPrefix}/aws/SCIMEndpointUrl`,
     IdentityStoreIdParam: `${ParamPrefix}/aws/IdentityStoreId`,
-    SecretRegionParam: `${ParamPrefix}/aws/Region`,
+    SSORegionParam: `${ParamPrefix}/aws/SSORegion`,
     AppVersionParam: `${ParamPrefix}/Staging/Version`
 }
 export const Keys = {
@@ -24,7 +24,7 @@ export const Keys = {
     WIFEmailParam: 'SSOSync:WIFServiceAccountEmail',
     SCIMEndpointParam: 'SSOSync:SCIMEndpoint',
     SCIMAccessTokenSecret: 'SSOSync:SCIMAccessToken',
-    SecretRegion: 'SSOSync:Region',
+    SSORegion: 'SSOSync:SSORegion',
     IdentityStoreIDParam: 'SSOSync:IdentityStoreId',
     KeyForSecretsParam: 'SSOSync:KeyForSecrets',
 }
@@ -37,7 +37,7 @@ export const SSOSync = {
         WIFEmailParam: () => Fn.importValue(Keys.WIFEmailParam),
         SCIMEndpointParam: () => Fn.importValue(Keys.SCIMEndpointParam),
         SCIMAccessTokenSecret: () => Fn.importValue(Keys.SCIMAccessTokenSecret),
-        SecretRegion: () => Fn.importValue(Keys.SecretRegion),
+        SSORegion: () => Fn.importValue(Keys.SSORegion),
         IdentityStoreIDParam: () => Fn.importValue(Keys.IdentityStoreIDParam),
         KeyForSecretsParam: () => Fn.importValue(Keys.KeyForSecretsParam),
     },
@@ -72,10 +72,10 @@ export const SSOSync = {
             value: data,
             exportName: Keys.SCIMAccessTokenSecret,
         }),
-        SecretRegion: (stack: Construct, data: any) => new CfnOutput(stack, 'OUT-Region-Param', {
-            description: 'ARN of the SSM Parameter containing the secret region',
+        SSORegion: (stack: Construct, data: any) => new CfnOutput(stack, 'OUT-SSORegion-Param', {
+            description: 'ARN of the SSM Parameter containing the region where SSO is located',
             value: data,
-            exportName: Keys.SecretRegion,
+            exportName: Keys.SSORegion,
         }),
         IdentityStoreIDParam: (stack: Construct, data: any) => new CfnOutput(stack, 'OUT-IdentityStoreId-Param', {
             description: 'ARN of the SSM Parameter containing the AWS Identity Center Identity Store ID',

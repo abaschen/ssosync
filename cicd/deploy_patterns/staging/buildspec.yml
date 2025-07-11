@@ -19,7 +19,7 @@ phases:
   build:
     commands:
       # Create parameters
-      - aws ssm put-parameter --name "/SSOSync/Staging/Version" --value ${AppVersion} --type String --overwrite
+      - aws ssm put-parameter --name "/SSOSync-Staging/Version" --value ${AppVersion} --type String --overwrite
 
       # remove the previous builds
       #- aws serverlessrepo delete-application --application-id ${AppArn}
@@ -51,28 +51,28 @@ phases:
       # Update params with the values for this run for a developer account
       - |
         jq -n \
-        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\", \"GoogleAdminEmailArn\": \"$ParamGoogleAdminEmail\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMEndpointUrlArn\": \"$SecretSCIMEndpoint\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"RegionArn\": \"$SecretRegion\", \"IdentityStoreIdArn\": \"$SecretIdentityStoreID\", \"GroupMatch\": \"name:AWS*\"}" \
+        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\", \"GoogleAdminEmailArn\": \"$ParamGoogleAdminEmail\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMEndpointUrlArn\": \"$SecretSCIMEndpoint\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"SSORegion\": \"$ParamSSORegion\", \"IdentityStoreIdArn\": \"$SecretIdentityStoreID\", \"GroupMatch\": \"name:AWS*\"}" \
         --argjson StackPolicy "{\"Statement\":[{\"Effect\": \"Allow\", \"NotAction\": \"Update:Delete\", \"Principal\": \"*\", \"Resource\": \"*\"}]}" \
         '$ARGS.named' > ./deploy/developer.json
       - cat ./deploy/developer.json
       # Update params with the values for this run for the management account
       - |
         jq -n \
-        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\", \"GoogleAdminEmailArn\": \"$ParamGoogleAdminEmail\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMEndpointUrlArn\": \"$SecretSCIMEndpoint\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"RegionArn\": \"$SecretRegion\", \"IdentityStoreIdArn\": \"$SecretIdentityStoreID\", \"GroupMatch\": \"name:Man*\"}" \
+        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\", \"GoogleAdminEmailArn\": \"$ParamGoogleAdminEmail\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMEndpointUrlArn\": \"$SecretSCIMEndpoint\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"SSORegion\": \"$ParamSSORegion\", \"IdentityStoreIdArn\": \"$SecretIdentityStoreID\", \"GroupMatch\": \"name:Man*\"}" \
         --argjson StackPolicy "{\"Statement\":[{\"Effect\": \"Allow\", \"NotAction\": \"Update:Delete\", \"Principal\": \"*\", \"Resource\": \"*\"}]}" \
         '$ARGS.named' > ./deploy/management.json
       - cat ./deploy/management.json
       # Update params with the values for this run for the delegated account
       - |
         jq -n \
-        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\",  \"GoogleAdminEmailArn\": \"$ParamGoogleAdminEmail\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMEndpointUrlArn\": \"$SecretSCIMEndpoint\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"RegionArn\": \"$SecretRegion\", \"IdentityStoreIdArn\": \"$SecretIdentityStoreID\", \"GroupMatch\": \"name:Del*\"}" \
+        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\",  \"GoogleAdminEmailArn\": \"$ParamGoogleAdminEmail\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMEndpointUrlArn\": \"$SecretSCIMEndpoint\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"SSORegion\": \"$ParamSSORegion\", \"IdentityStoreIdArn\": \"$SecretIdentityStoreID\", \"GroupMatch\": \"name:Del*\"}" \
         --argjson StackPolicy "{\"Statement\":[{\"Effect\": \"Allow\", \"NotAction\": \"Update:Delete\", \"Principal\": \"*\", \"Resource\": \"*\"}]}" \
         '$ARGS.named' > ./deploy/delegated.json
       - cat ./deploy/delegated.json
       # Update params with the values for this run for non-delegated account
       - |
         jq -n \
-        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\", \"GoogleAdminEmailArn\": \"$SecretGoogleAdminEmail\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMEndpointUrlArn\": \"$SecretSCIMEndpoint\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"RegionArn\": \"$SecretRegion\", \"IdentityStoreIdArn\": \"$SecretIdentityStoreID\", \"GroupMatch\": \"name:Non*\"}" \
+        --argjson Parameters "{\"AppArn\": \"$AppArn\", \"AppVersion\": \"$AppVersion\", \"GoogleAdminEmailArn\": \"$SecretGoogleAdminEmail\", \"GoogleCredentialsArn\": \"$SecretGoogleCredentials\", \"SCIMEndpointUrlArn\": \"$SecretSCIMEndpoint\", \"SCIMAccessTokenArn\": \"$SecretSCIMAccessToken\", \"SSORegion\": \"$ParamSSORegion\", \"IdentityStoreIdArn\": \"$SecretIdentityStoreID\", \"GroupMatch\": \"name:Non*\"}" \
         --argjson StackPolicy "{\"Statement\":[{\"Effect\": \"Allow\", \"NotAction\": \"Update:Delete\", \"Principal\": \"*\", \"Resource\": \"*\"}]}" \
         '$ARGS.named' > ./deploy/nondelegated.json
       - cat ./deploy/nondelegated.json

@@ -21,6 +21,7 @@ export interface SSOSyncSecretsStackProps extends cdk.StackProps {
   scimEndpointUrl: string;
   scimEndpointAccessToken: string;
   identityStoreId: string;
+  ssoRegion: string;
 }
 
 export class SSOSyncSecretsStack extends cdk.Stack {
@@ -173,29 +174,23 @@ export class SSOSyncSecretsStack extends cdk.Stack {
     });
     grantRead(paramIdentityStore);
 
-    const secretRegion = new StringParameter(this, 'SecretRegion', {
-      parameterName: ParameterNames.SecretRegionParam,
-      stringValue: this.region,
+    const ssoRegion = new StringParameter(this, 'SSORegion', {
+      parameterName: ParameterNames.SSORegionParam,
+      stringValue: props.ssoRegion,
     });
-    grantRead(secretRegion);
+    grantRead(ssoRegion);
     // output these
-    /*
-    secretSCIMEndpoint.parameterArn
-    secretSCIMToken.secretArn
-    secretRegion.parameterArn
-    secretIdentityStore.parameterArn
-    keyForSecrets.keyArn
-    */
+
     SSOSync.exports.SCIMEndpointParam(this, paramSCIMEndpoint.parameterArn);
     SSOSync.exports.SCIMAccessTokenSecret(this, secretSCIMToken.secretArn);
-    SSOSync.exports.SecretRegion(this, this.region);
+    SSOSync.exports.SSORegion(this, ssoRegion.parameterArn);
     SSOSync.exports.IdentityStoreIDParam(this, paramIdentityStore.parameterArn);
     SSOSync.exports.KeyForSecretsParam(this, keyForSecrets.keyArn);
 
     //export as string
-    //${SecretGoogleCredentials},${ParamGoogleAdminEmail},${ParamSCIMEndpoint},${SecretSCIMAccessToken},${SecretRegion},${ParamIdentityStoreId},arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${KeyForSecrets}
+    //${SecretGoogleCredentials},${ParamGoogleAdminEmail},${ParamSCIMEndpoint},${SecretSCIMAccessToken},${SSORegion},${ParamIdentityStoreId},arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${KeyForSecrets}
     new cdk.CfnOutput(this, 'AppConfig', {
-      value: `${appConfig}${paramSCIMEndpoint.parameterArn},${secretSCIMToken.secretArn},${secretRegion.parameterArn},${paramIdentityStore.parameterArn},${keyForSecrets.keyArn}`,
+      value: `${appConfig}${paramSCIMEndpoint.parameterArn},${secretSCIMToken.secretArn},${ssoRegion.parameterArn},${paramIdentityStore.parameterArn},${keyForSecrets.keyArn}`,
       exportName: 'AppConfig'
     });
   }
