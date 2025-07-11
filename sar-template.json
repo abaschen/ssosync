@@ -633,12 +633,15 @@
             "Assertions": [
                 {
                     "Assert": {
-                        "Fn::Equals": [
+                        "Fn::Or": [
                             {
-                                "Ref": "CrossStackConfig"
+                                "Fn::Equals": [{"Ref": "CrossStackConfig"},""]
                             },
-                            ""
+                            {
+                                "Fn::Equals": [{"Ref": "CrossStackConfig"},"-"]
+                            }
                         ]
+                        
                     },
                     "AssertDescription": "Do not provide a Cross Stack Configuration for this deployment type."
                 }
@@ -658,11 +661,13 @@
                     "Assert": {
                         "Fn::Not": [
                             {
-                                "Fn::Equals": [
+                                "Fn::Or": [
                                     {
-                                        "Ref": "CrossStackConfig"
+                                        "Fn::Equals": [{"Ref": "CrossStackConfig"},""]
                                     },
-                                    ""
+                                    {
+                                        "Fn::Equals": [{"Ref": "CrossStackConfig"},"-"]
+                                    }
                                 ]
                             }
                         ]
@@ -763,11 +768,13 @@
                     "Assert": {
                         "Fn::Not": [
                             {
-                                "Fn::Equals": [
+                                "Fn::Or": [
                                     {
-                                        "Ref": "CrossStackConfig"
+                                        "Fn::Equals": [{"Ref": "CrossStackConfig"},""]
                                     },
-                                    ""
+                                    {
+                                        "Fn::Equals": [{"Ref": "CrossStackConfig"},"-"]
+                                    }
                                 ]
                             }
                         ]
