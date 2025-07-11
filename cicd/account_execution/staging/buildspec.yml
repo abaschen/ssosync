@@ -9,9 +9,10 @@ env:
     SSORegion: /SSOSync-Staging/aws/SSORegion
     GoogleAdminEmail: /SSOSync-Staging/google/AdminEmail
     #WIFServiceAccountEmail: /SSOSync/google/WIFServiceAccountEmail
-  secrets-manager:
-    SecretGoogleCredentials: ssosync-staging/google/ServiceAccountCredentials
-    SecretSCIMAccessToken: ssosync-staging/aws/SCIMAccessToken
+  #secrets-manager:
+  #key: secret-id:json-key:version-stage:version-id
+  #SecretGoogleCredentials: ssosync-staging/google/ServiceAccountCredentials
+  #SecretSCIMAccessToken: ssosync-staging/aws/SCIMAccessToken
 
 phases:
   build:
