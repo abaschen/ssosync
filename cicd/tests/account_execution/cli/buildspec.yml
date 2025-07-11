@@ -2,14 +2,17 @@ version: 0.2
 
 env:
   secrets-manager:
-    GoogleAdminEmail: SSOSyncGoogleAdminEmail
-    SCIMEndpointUrl: SSOSyncSCIMEndpointUrl
-    SCIMAccessToken: SSOSyncSCIMAccessToken
-    IdentityStoreID: SSOSyncIdentityStoreID
-    Region: SSOSyncRegion
+    SCIMAccessToken: ssosync-staging/aws/SCIMAccessToken
+    SSOSyncGoogleCredentials: ssosync-staging/google/ServiceAccountCredentials
+  parameter-store:
+    SCIMEndpointUrl: /SSOSync-Staging/aws/SCIMEndpointUrl
+    IdentityStoreID: /SSOSync-Staging/aws/IdentityStoreId
+    GoogleAdminEmail: /SSOSync-Staging/google/SSOSyncGoogleAdminEmail
+    Region: /SSOSync-Staging/aws/Region
+
   variables:
     ExpectedExitState: 0
-  
+
 phases:
   pre_build:
     commands:
@@ -19,7 +22,7 @@ phases:
   build:
     commands:
       - ./ssosync --version
-      - aws secretsmanager  get-secret-value --secret-id=SSOSyncGoogleCredentials --query SecretString --output text | jq '.' > credentials.json
+      - cat $SSOSyncGoogleCredentials > credentials.json
       - cat credentials.json
 
       - ./ssosync -t "${SCIMAccessToken}" -e "${SCIMEndpointUrl}" -u "${GoogleAdminEmail}" -i "${IdentityStoreID}" -r "${Region}" -s "groups" -g "name:AWS*"; ExitState=$?
@@ -32,4 +35,3 @@ phases:
           echo "We didn't get what we expected"
           exit 1
         fi
-
