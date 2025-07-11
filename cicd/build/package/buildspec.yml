@@ -39,7 +39,7 @@ phases:
       # Create parameters from metadata
       # exemple: {"project_name":"ssosync","tag":"v2.2.10","previous_tag":"v2.2.9","version":"2.2.10-SNAPSHOT-2adae4a","commit":"2adae4a3c30d124cac2116193c2fe8f88c01ff2f","date":"2025-06-02T13:49:30.20931974Z","runtime":{"goos":"linux","goarch":"arm64"}}
       - echo "AppVersion=${AppVersion}"
-      - aws ssm put-parameter --name "/SSOSync/Staging/Version" --value ${AppVersion} --type String --overwrite
+      - aws ssm put-parameter --name "/SSOSync-Staging/Version" --value ${AppVersion} --type String --overwrite
 
       # remove the previous builds
       #- aws serverlessrepo delete-application --application-id ${AppArn}

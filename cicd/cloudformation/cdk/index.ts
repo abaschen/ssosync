@@ -22,6 +22,7 @@ new SSOSyncSecretsStack(app, 'SSOSyncSecretsStack', {
   scimEndpointUrl: app.node.getContext('ssosync/aws-sso/scimEndpointUrl'),
   scimEndpointAccessToken: app.node.getContext('ssosync/aws-sso/scimEndpointAccessToken'),
   identityStoreId: app.node.getContext('ssosync/aws-sso/identityStoreId'),
+  ssoRegion: app.node.getContext('ssosync/aws-sso/region'),
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: 'eu-west-1'
