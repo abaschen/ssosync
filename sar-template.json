@@ -107,13 +107,13 @@
             "Type": "String",
             "Description": "[optional] specify the prefix for the parameters starting and ending with `/`\n",
             "Default": "/SSOSync/",
-            "AllowedPattern": "/[a-zA-Z0-9\\.-_/]*[a-zA-Z0-9\\.-_]+/"
+            "AllowedPattern": "\\/[a-zA-Z0-9\\.-_\\/]*[a-zA-Z0-9\\.-_]+\\/"
         },
         "SecretPrefix": {
             "Type": "String",
             "Description": "[optional] specify the prefix for the secrets ending with `/`\n",
             "Default": "ssosync/",
-            "AllowedPattern": "[a-zA-Z][\\w_\\+=\\.@-]*\\/)*[\\w_\\+=\\.@-]+/"
+            "AllowedPattern": "([a-zA-Z][\\w_\\+=\\.@-]*\\/)*[\\w_\\+=\\.@-]+\\/"
         },
         "FunctionName": {
             "Type": "String",
