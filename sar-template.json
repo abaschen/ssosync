@@ -878,7 +878,7 @@
                                             "Fn::If": [
                                                 "CreateSecrets",
                                                 {
-                                                    "Ref": "ParamGoogleAdminEmail"
+                                                    "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamGoogleAdminEmail}"
                                                 },
                                                 {
                                                     "Fn::Select": [
@@ -899,7 +899,7 @@
                                             "Fn::If": [
                                                 "CreateSecrets",
                                                 {
-                                                    "Ref": "ParamSCIMEndpoint"
+                                                    "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamSCIMEndpoint}"
                                                 },
                                                 {
                                                     "Fn::Select": [
@@ -920,7 +920,7 @@
                                             "Fn::If": [
                                                 "CreateSecrets",
                                                 {
-                                                    "Ref": "SecretRegion"
+                                                    "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SecretRegion}"
                                                 },
                                                 {
                                                     "Fn::Select": [
@@ -941,7 +941,7 @@
                                             "Fn::If": [
                                                 "CreateSecrets",
                                                 {
-                                                    "Ref": "ParamIdentityStoreId"
+                                                    "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamIdentityStoreId}"
                                                 },
                                                 {
                                                     "Fn::Select": [
@@ -1252,7 +1252,7 @@
                             "Fn::If": [
                                 "CreateSecrets",
                                 {
-                                    "Ref": "ParamGoogleAdminEmail"
+                                    "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamGoogleAdminEmail}"
                                 },
                                 {
                                     "Fn::Select": [
@@ -1273,7 +1273,7 @@
                             "Fn::If": [
                                 "CreateSecrets",
                                 {
-                                    "Ref": "ParamSCIMEndpoint"
+                                    "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamSCIMEndpoint}"
                                 },
                                 {
                                     "Fn::Select": [
@@ -1315,7 +1315,7 @@
                             "Fn::If": [
                                 "CreateSecrets",
                                 {
-                                    "Ref": "SecretRegion"
+                                    "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SecretRegion}"
                                 },
                                 {
                                     "Fn::Select": [
@@ -1336,7 +1336,7 @@
                             "Fn::If": [
                                 "CreateSecrets",
                                 {
-                                    "Ref": "ParamIdentityStoreId"
+                                    "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamIdentityStoreId}"
                                 },
                                 {
                                     "Fn::Select": [
@@ -1645,7 +1645,7 @@
             "Condition": "OutputSecrets",
             "Description": "The Comma Separated list of secrets ARNs to copy and paste into the CrossStackConfig field of the App only stack.",
             "Value": {
-                "Fn::Sub": "${SecretGoogleCredentials},${ParamGoogleAdminEmail},${ParamSCIMEndpoint},${SecretSCIMAccessToken},${SecretRegion},${ParamIdentityStoreId}"
+                "Fn::Sub": "${SecretGoogleCredentials},arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamGoogleAdminEmail},arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamSCIMEndpoint},${SecretSCIMAccessToken},arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SecretRegion},arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamIdentityStoreId}"
             },
             "Export": {
                 "Name": "AppConfig"
@@ -1655,7 +1655,7 @@
             "Condition": "CreateKey",
             "Description": "The Comma Separated list of Secrets and KMS Key ARNs to copy and paste into the CrossStackConfig field of the app for cross-account stack.",
             "Value": {
-                "Fn::Sub": "${SecretGoogleCredentials},${ParamGoogleAdminEmail},${ParamSCIMEndpoint},${SecretSCIMAccessToken},${SecretRegion},${ParamIdentityStoreId},arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${KeyForSecrets}"
+                "Fn::Sub": "${SecretGoogleCredentials},arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamGoogleAdminEmail},arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamSCIMEndpoint},${SecretSCIMAccessToken},arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SecretRegion},arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamIdentityStoreId},arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${KeyForSecrets}"
             },
             "Export": {
                 "Name": "AppConfig"
