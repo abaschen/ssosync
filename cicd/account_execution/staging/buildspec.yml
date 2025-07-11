@@ -21,7 +21,7 @@ phases:
       # Copy in the stack and params templates
       - mkdir deploy
       # no modifications here
-      - jq cicd/deploy_patterns/stack.json > ./deploy/stack.json
+      - jq '.' cicd/deploy_patterns/stack.json > ./deploy/stack.json
 
       # Update params with the values for this run for a developer account
       - |
