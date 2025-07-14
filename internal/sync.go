@@ -849,7 +849,9 @@ func DoSync(ctx context.Context, cfg *config.Config) error {
 		context.Background(),
 		identityStoreClient,
 		&cfg.IdentityStoreID,
-		func(g identitystore_types.Group) *interfaces.Group { return nil },
+		func(g identitystore_types.Group) *interfaces.Group {
+			return ConvertIdentityStoreGroupToAWSGroup(g)
+		},
 	)
 
 	if err != nil {
@@ -916,6 +918,15 @@ func (s *syncGSuite) includeGroup(name string) bool {
 }
 
 func ConvertIdentityStoreGroupToAWSGroup(group identitystore_types.Group) *interfaces.Group {
+	if group.GroupId == nil {
+		log.WithField("group", group).Warn("Group has no GroupId")
+		return nil
+	}
+	if group.DisplayName == nil {
+		log.WithField("group", group).Warn("Group has no DisplayName")
+		return nil
+	}
+	log.WithField("groupId", group.GroupId).WithField("displayName", group.DisplayName).Debug("Group converted")
 	return &interfaces.Group{
 		ID:          *group.GroupId,
 		Schemas:     []string{"urn:ietf:params:scim:schemas:core:2.0:Group"},

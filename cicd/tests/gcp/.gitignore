@@ -1,0 +1,6 @@
+*.auto.tfvars
+*.lock.hcl
+.terraform/
+google-service-account.json
+
+*.tfstate*

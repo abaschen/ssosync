@@ -130,10 +130,10 @@ func (c *client) GetUsers(query string) ([]*admin.User, error) {
 	} else {
 
 		// The Google api doesn't support multi-part queries, but we do so we need to split into an array of query strings
-		queries := strings.Split(query, ",")
+		queries := strings.SplitSeq(query, ",")
 
 		// Then call the api one query at a time, appending to our list
-		for _, subQuery := range queries {
+		for subQuery := range queries {
 			err = c.service.Users.List().Query(subQuery).Customer("my_customer").Pages(c.ctx, func(users *admin.Users) error {
 				if err != nil {
 					return err
@@ -142,6 +142,10 @@ func (c *client) GetUsers(query string) ([]*admin.User, error) {
 				return nil
 			})
 		}
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	// some people prefer to go by a mononym
