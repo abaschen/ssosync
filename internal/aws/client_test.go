@@ -100,7 +100,7 @@ func TestSendRequestBadUrl(t *testing.T) {
 	require.NoError(t, err)
 	cc := c.(*client)
 
-	r, err := cc.get(":foo", nil)
+	r, err := cc.get("/:foo", nil)
 	require.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -120,7 +120,7 @@ func TestSendRequestBadStatusCode(t *testing.T) {
 	require.NoError(t, err)
 	cc := c.(*client)
 
-	r, err := cc.get(":foo", nil)
+	r, err := cc.get("/:foo", nil)
 	require.Error(t, err)
 	assert.Nil(t, r)
 
