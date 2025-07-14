@@ -92,7 +92,7 @@ func NewClient(c internal_http.Client, config *Config) (Client, error) {
 
 func (c *client) prepareRequest(method string, path string, body any) (req *http.Request, err error) {
 	if body == nil {
-		req, err = http.NewRequest(method, c.baseURL, nil)
+		req, err = http.NewRequest(method, c.baseURL+path, nil)
 
 		if err != nil {
 			return nil, err
@@ -103,14 +103,13 @@ func (c *client) prepareRequest(method string, path string, body any) (req *http
 		if err != nil {
 			return nil, err
 		}
-		req, err = http.NewRequest(method, c.baseURL, strings.NewReader(string(d)))
+		req, err = http.NewRequest(method, c.baseURL+path, strings.NewReader(string(d)))
 		if err != nil {
 			return nil, err
 		}
 	}
-	req.URL.Path = path
 
-	log.WithFields(log.Fields{"url": c.baseURL, "path": path, "method": method})
+	log.WithFields(log.Fields{"url": c.baseURL, "path": path, "method": method}).Debug("Preparing request")
 
 	// Set the content-type and authorization headers
 	req.Header.Set("Content-Type", "application/scim+json")
@@ -135,7 +134,7 @@ func (c *client) get(path string, beforeSend QueryTransformer) (response []byte,
 	}
 	if beforeSend != nil {
 		beforeSend(req)
-		log.WithFields(log.Fields{"query": req.URL.RawQuery})
+		log.WithFields(log.Fields{"query": req.URL.RawQuery}).Debug("Sending request to ", path)
 	}
 
 	resp, err := c.httpClient.Do(req)
