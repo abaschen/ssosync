@@ -7,7 +7,7 @@ env:
   parameter-store:
     SCIMEndpointUrl: /SSOSync-Staging/aws/SCIMEndpointUrl
     IdentityStoreID: /SSOSync-Staging/aws/IdentityStoreId
-    GoogleAdminEmail: /SSOSync-Staging/google/SSOSyncGoogleAdminEmail
+    GoogleAdminEmail: /SSOSync-Staging/google/AdminEmail
     Region: /SSOSync-Staging/aws/SSORegion
 
   variables:
