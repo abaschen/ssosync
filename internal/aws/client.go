@@ -125,7 +125,7 @@ func close(body io.ReadCloser) {
 }
 
 func (c *client) get(path string, beforeSend QueryTransformer) (response []byte, err error) {
-	log.Debug("Sending request to ", path)
+	log.Debug("Sending GET request to ", path)
 	// Validate URL
 	req, err := c.prepareRequest(http.MethodGet, path, nil)
 
@@ -134,14 +134,16 @@ func (c *client) get(path string, beforeSend QueryTransformer) (response []byte,
 	}
 	if beforeSend != nil {
 		beforeSend(req)
-		log.WithFields(log.Fields{"query": req.URL.RawQuery}).Debug("Sending request to ", path)
+		log.WithFields(log.Fields{"query": req.URL.RawQuery}).Debug("Sending GET request to ", path)
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		log.Debugf("HTTP error for GET %s: %v", path, err)
 		return
 	}
 
+	log.Debugf("GET %s returned status: %d", path, resp.StatusCode)
 	if resp.Body == nil {
 		return nil, &ErrHTTPNotOK{resp.StatusCode}
 	}
@@ -149,10 +151,12 @@ func (c *client) get(path string, beforeSend QueryTransformer) (response []byte,
 
 	response, err = io.ReadAll(resp.Body)
 	if err != nil {
+		log.Debugf("Error reading response body for GET %s: %v", path, err)
 		return
 	}
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode > http.StatusNoContent {
+		log.Debugf("Non-2xx status code %d for GET %s", resp.StatusCode, path)
 		err = &ErrHTTPNotOK{resp.StatusCode}
 	}
 
@@ -170,18 +174,22 @@ func (c *client) post(path string, body any) (response []byte, err error) {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		log.Debugf("HTTP error for POST %s: %v", path, err)
 		return
 	}
 
+	log.Debugf("POST %s returned status: %d", path, resp.StatusCode)
 	defer close(resp.Body)
 
 	response, err = io.ReadAll(resp.Body)
 	if err != nil {
+		log.Debugf("Error reading response body for POST %s: %v", path, err)
 		return
 	}
 
 	// If we get a non-2xx status code, raise that via an error
 	if resp.StatusCode < http.StatusOK || resp.StatusCode > http.StatusNoContent {
+		log.Debugf("Non-2xx status code %d for POST %s", resp.StatusCode, path)
 		err = &ErrHTTPNotOK{resp.StatusCode}
 	}
 
@@ -190,7 +198,7 @@ func (c *client) post(path string, body any) (response []byte, err error) {
 }
 
 func (c *client) put(path string, body any) (response []byte, err error) {
-	log.Debug("Sending POST request to ", path)
+	log.Debug("Sending PUT request to ", path)
 	// Validate URL
 	req, err := c.prepareRequest(http.MethodPut, path, body)
 
@@ -200,18 +208,22 @@ func (c *client) put(path string, body any) (response []byte, err error) {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		log.Debugf("HTTP error for PUT %s: %v", path, err)
 		return
 	}
 
+	log.Debugf("PUT %s returned status: %d", path, resp.StatusCode)
 	defer close(resp.Body)
 
 	response, err = io.ReadAll(resp.Body)
 	if err != nil {
+		log.Debugf("Error reading response body for PUT %s: %v", path, err)
 		return
 	}
 
 	// If we get a non-2xx status code, raise that via an error
 	if resp.StatusCode < http.StatusOK || resp.StatusCode > http.StatusNoContent {
+		log.Debugf("Non-2xx status code %d for PUT %s", resp.StatusCode, path)
 		err = &ErrHTTPNotOK{resp.StatusCode}
 	}
 
@@ -228,48 +240,58 @@ func beforeSendAddFilter(filter string) QueryTransformer {
 
 // FindUserByEmail will find the user by the email address specified
 func (c *client) FindUserByEmail(email string) (*interfaces.User, error) {
+	log.Debugf("Finding user by email: %s", email)
 	filter := fmt.Sprintf("userName eq \"%s\"", email)
 
 	//do a get to /Users and add filter=userName eq "email"
 	resp, err := c.get("/Users", beforeSendAddFilter(filter))
 
 	if err != nil {
+		log.Debugf("Error finding user %s: %v", email, err)
 		return nil, err
 	}
 
 	var r interfaces.UserFilterResults
 	err = json.Unmarshal(resp, &r)
 	if err != nil {
+		log.Debugf("Error unmarshaling user response for %s: %v", email, err)
 		return nil, err
 	}
 
+	log.Debugf("User search for %s returned %d results", email, r.TotalResults)
 	if r.TotalResults != 1 {
 		return nil, ErrUserNotFound
 	}
 
+	log.Debugf("Found user: %s (ID: %s)", email, r.Resources[0].ID)
 	return &r.Resources[0], nil
 }
 
 func (c *client) FindGroupByDisplayName(name string) (*interfaces.Group, error) {
+	log.Debugf("Finding group by display name: %s", name)
 	filter := fmt.Sprintf("displayName eq \"%s\"", name)
 
-	//do a get to /Users and add filter=userName eq "email"
+	//do a get to /Groups and add filter=displayName eq "name"
 	resp, err := c.get("/Groups", beforeSendAddFilter(filter))
 
 	if err != nil {
+		log.Debugf("Error finding group %s: %v", name, err)
 		return nil, err
 	}
 
 	var r interfaces.GroupFilterResults
 	err = json.Unmarshal(resp, &r)
 	if err != nil {
+		log.Debugf("Error unmarshaling group response for %s: %v", name, err)
 		return nil, err
 	}
 
+	log.Debugf("Group search for %s returned %d results", name, r.TotalResults)
 	if r.TotalResults != 1 {
 		return nil, ErrGroupNotFound
 	}
 
+	log.Debugf("Found group: %s (ID: %s)", name, r.Resources[0].ID)
 	return &r.Resources[0], nil
 }
 
@@ -279,20 +301,25 @@ func (c *client) CreateUser(u *interfaces.User) (*interfaces.User, error) {
 		return nil, ErrUserNotSpecified
 	}
 
+	log.Debugf("Creating user: %s", u.Username)
 	resp, err := c.post("/Users", *u)
 	if err != nil {
+		log.Debugf("Error creating user %s: %v", u.Username, err)
 		return nil, err
 	}
 
 	var newUser interfaces.User
 	err = json.Unmarshal(resp, &newUser)
 	if err != nil {
+		log.Debugf("Error unmarshaling create user response for %s: %v", u.Username, err)
 		return nil, err
 	}
 	if newUser.ID == "" {
+		log.Debugf("User %s created but no ID returned, finding by email", u.Username)
 		return c.FindUserByEmail(u.Username)
 	}
 
+	log.Debugf("Successfully created user: %s (ID: %s)", u.Username, newUser.ID)
 	return &newUser, nil
 }
 
@@ -302,19 +329,24 @@ func (c *client) UpdateUser(u *interfaces.User) (*interfaces.User, error) {
 		return nil, ErrUserNotFound
 	}
 
+	log.Debugf("Updating user: %s (ID: %s)", u.Username, u.ID)
 	resp, err := c.put(fmt.Sprintf("/Users/%s", u.ID), *u)
 	if err != nil {
+		log.Debugf("Error updating user %s: %v", u.Username, err)
 		return nil, err
 	}
 
 	var newUser interfaces.User
 	err = json.Unmarshal(resp, &newUser)
 	if err != nil {
+		log.Debugf("Error unmarshaling update user response for %s: %v", u.Username, err)
 		return nil, err
 	}
 	if newUser.ID == "" {
+		log.Debugf("User %s updated but no ID returned, finding by email", u.Username)
 		return c.FindUserByEmail(u.Username)
 	}
 
+	log.Debugf("Successfully updated user: %s (ID: %s)", u.Username, newUser.ID)
 	return &newUser, nil
 }

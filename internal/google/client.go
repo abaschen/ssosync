@@ -20,6 +20,7 @@ import (
 	"errors"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 	admin "google.golang.org/api/admin/directory/v1"
 	"google.golang.org/api/option"
@@ -65,6 +66,7 @@ func NewClient(ctx context.Context, adminEmail string, serviceAccountKey []byte)
 
 // GetDeletedUsers will get the deleted users from the Google's Admin API.
 func (c *client) GetDeletedUsers() ([]*admin.User, error) {
+	log.Debug("Getting deleted users from Google Admin API")
 	u := make([]*admin.User, 0)
 	var err error
 
@@ -72,15 +74,18 @@ func (c *client) GetDeletedUsers() ([]*admin.User, error) {
 		if err != nil {
 			return err
 		}
+		log.Debugf("Retrieved %d deleted users in this page", len(users.Users))
 		u = append(u, users.Users...)
 		return nil
 	})
 
+	log.Debugf("Total deleted users retrieved: %d", len(u))
 	return u, err
 }
 
 // GetGroupMembers will get the members of the group specified
 func (c *client) GetGroupMembers(g *admin.Group) ([]*admin.Member, error) {
+	log.Debugf("Getting members for group: %s (%s)", g.Name, g.Email)
 	m := make([]*admin.Member, 0)
 	var err error
 
@@ -88,10 +93,12 @@ func (c *client) GetGroupMembers(g *admin.Group) ([]*admin.Member, error) {
 		if err != nil {
 			return err
 		}
+		log.Debugf("Retrieved %d members in this page for group %s", len(members.Members), g.Email)
 		m = append(m, members.Members...)
 		return nil
 	})
 
+	log.Debugf("Total members retrieved for group %s: %d", g.Email, len(m))
 	return m, err
 }
 
@@ -110,20 +117,24 @@ func (c *client) GetGroupMembers(g *admin.Group) ([]*admin.Member, error) {
 //	orgName=Engineering orgTitle:Manager
 //	EmploymentData.projects:'GeneGnomes'
 func (c *client) GetUsers(query string) ([]*admin.User, error) {
+	log.Debugf("Getting users with query: '%s'", query)
 	u := make([]*admin.User, 0)
 	var err error
 
 	// If we have an empty query, return nothing.
 	if query == "" {
+		log.Debug("Empty query provided, returning no users")
 		return u, err
 	}
 
 	// If we have wildcard then fetch all users
 	if query == "*" {
+		log.Debug("Wildcard query detected, fetching all users")
 		err = c.service.Users.List().Customer("my_customer").Pages(c.ctx, func(users *admin.Users) error {
 			if err != nil {
 				return err
 			}
+			log.Debugf("Retrieved %d users in this page", len(users.Users))
 			u = append(u, users.Users...)
 			return nil
 		})
@@ -134,10 +145,12 @@ func (c *client) GetUsers(query string) ([]*admin.User, error) {
 
 		// Then call the api one query at a time, appending to our list
 		for subQuery := range queries {
+			log.Debugf("Executing sub-query: '%s'", subQuery)
 			err = c.service.Users.List().Query(subQuery).Customer("my_customer").Pages(c.ctx, func(users *admin.Users) error {
 				if err != nil {
 					return err
 				}
+				log.Debugf("Retrieved %d users in this page for sub-query '%s'", len(users.Users), subQuery)
 				u = append(u, users.Users...)
 				return nil
 			})
@@ -177,43 +190,53 @@ func (c *client) GetUsers(query string) ([]*admin.User, error) {
 //	name:Admin* email:aws-*
 //	email:aws-*
 func (c *client) GetGroups(query string) ([]*admin.Group, error) {
+	log.Debugf("Getting groups with query: '%s'", query)
 	g := make([]*admin.Group, 0)
 	var err error
 
 	// If we have an empty query, then we are not looking for groups
 	if query == "" {
+		log.Debug("Empty query provided, returning no groups")
 		return g, err
 	}
 
 	// If we have wildcard then fetch all groups
 	if query == "*" {
+		log.Debug("Wildcard query detected, fetching all groups")
 		err = c.service.Groups.List().Customer("my_customer").Pages(context.TODO(), func(groups *admin.Groups) error {
 			if err != nil {
 				return err
 			}
+			log.Debugf("Retrieved %d groups in this page", len(groups.Groups))
 			g = append(g, groups.Groups...)
 			return nil
 		})
+		log.Debugf("Total groups retrieved: %d", len(g))
 		return g, err
 	}
 
 	// The Google api doesn't support multi-part queries, but we do so we need to split into an array of query strings
 	queries := strings.Split(query, ",")
+	log.Debugf("Split query into %d sub-queries", len(queries))
 
 	// Then call the api one query at a time, appending to our list
 	for _, subQuery := range queries {
+		log.Debugf("Executing sub-query: '%s'", subQuery)
 		err = c.service.Groups.List().Customer("my_customer").Query(subQuery).Pages(context.TODO(), func(groups *admin.Groups) error {
 			if err != nil {
 				return err
 			}
+			log.Debugf("Retrieved %d groups in this page for sub-query '%s'", len(groups.Groups), subQuery)
 			g = append(g, groups.Groups...)
 			return nil
 		})
 	}
 
-	// Check we've got some users otherwise something is wrong.
+	// Check we've got some groups otherwise something is wrong.
 	if len(g) == 0 {
+		log.Warn("Google API returned 0 groups")
 		return g, errors.New("google api return 0 groups?")
 	}
+	log.Debugf("Total groups retrieved: %d", len(g))
 	return g, err
 }
