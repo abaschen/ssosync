@@ -23,8 +23,8 @@ phases:
     commands:
       - export SSOSYNC_BIN=$([ "$(uname -m)" = "aarch64" ] && echo "./dist/ssosync_linux_arm64_v8.2/ssosync" || echo "./dist/ssosync_linux_amd64_v1/ssosync")
       - $SSOSYNC_BIN --version
-      - cat $SSOSyncGoogleCredentials > credentials.json
-      - cat credentials.json
+      - printenv SSOSyncGoogleCredentials > credentials.json
+      - jq '.client_email,.client_id' credentials.json
 
       - $SSOSYNC_BIN -t "${SCIMAccessToken}" -e "${SCIMEndpointUrl}" -u "${GoogleAdminEmail}" -i "${IdentityStoreID}" -r "${Region}" -s "groups" -g "name:AWS*"; ExitState=$?
 
