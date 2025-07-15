@@ -75,7 +75,7 @@ export class SSOSyncSecretsStack extends cdk.Stack {
           new cdk.aws_iam.AccountPrincipal(props.delegatedAccount),
           new cdk.aws_iam.AccountPrincipal(props.nonDelegatedAccount),
         ],
-        actions: ['secretsmanager:GetSecretValue'],
+        actions: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
         resources: ['*'],
       }));
     };

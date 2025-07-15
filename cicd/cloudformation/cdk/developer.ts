@@ -7,6 +7,7 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 import { Function } from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 import { ParameterNames, SSOSync, SecretNames } from './imports.ts';
 
@@ -418,7 +419,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
     //grant read for secrets
     buildStaging.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['secretsmanager:GetSecretValue'],
+        actions: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
         resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:ssosync-staging/*`]
       }));
     //grant access to KMS Key to decrypt secret
@@ -441,7 +442,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
     //grant read for secrets
     buildSmokeCLI.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['secretsmanager:GetSecretValue'],
+        actions: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
         //GetSecretValue on resource: ssosync-staging/aws/SCIMAccessToken
         resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:ssosync-staging/*`]
       }));
@@ -449,6 +450,28 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       new iam.PolicyStatement({
         actions: ['kms:Decrypt', 'kms:DescribeKey'],
         resources: [SSOSync.imports.KeyForSecretsParam()]
+      }));
+
+    buildSmokeCLI.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "identitystore:DeleteUser",
+          "identitystore:DeleteGroup",
+          "identitystore:CreateGroup",
+          "identitystore:CreateGroupMembership",
+          "identitystore:ListGroups",
+          "identitystore:ListUsers",
+          "identitystore:ListGroupMemberships",
+          "identitystore:IsMemberInGroups",
+          "identitystore:GetGroupMembershipId",
+          "identitystore:DeleteGroupMembership",
+        ],
+        resources: [
+          "arn:aws:identitystore:::user/*",
+          "arn:aws:identitystore:::group/*",
+          "arn:aws:identitystore:::membership/*",
+          `arn:aws:identitystore::${this.account}:identitystore/${StringParameter.valueForStringParameter(this, '/SSOSync-Staging/aws/IdentityStoreId')}`
+        ]
       }));
 
     // buildApp.addToRolePolicy(
