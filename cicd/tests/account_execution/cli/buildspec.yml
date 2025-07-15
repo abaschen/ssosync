@@ -21,7 +21,7 @@ phases:
 
   build:
     commands:
-      - export SSOSYNC_BIN=[ "$(uname -m)" = "aarch64" ] && echo "$CODEBUILD_SRC_DIR_Built/dist/ssosync_linux_arm64_v8.2/ssosync" || echo "$CODEBUILD_SRC_DIR_Built/dist/ssosync_linux_amd64_v1/ssosync"
+      - export SSOSYNC_BIN=[ "$(uname -m)" = "aarch64" ] && echo "./dist/ssosync_linux_arm64_v8.2/ssosync" || echo "./dist/ssosync_linux_amd64_v1/ssosync"
       - $SSOSYNC_BIN --version
       - cat $SSOSyncGoogleCredentials > credentials.json
       - cat credentials.json
