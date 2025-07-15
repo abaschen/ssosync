@@ -21,11 +21,11 @@ phases:
 
   build:
     commands:
-      - ./ssosync --version
+      - $CODEBUILD_SRC_DIR_Built/dist/ssosync_linux_amd64_v1/ssosync --version
       - cat $SSOSyncGoogleCredentials > credentials.json
       - cat credentials.json
 
-      - ./ssosync -t "${SCIMAccessToken}" -e "${SCIMEndpointUrl}" -u "${GoogleAdminEmail}" -i "${IdentityStoreID}" -r "${Region}" -s "groups" -g "name:AWS*"; ExitState=$?
+      - $CODEBUILD_SRC_DIR_Built/dist/ssosync_linux_amd64_v1/ssosync -t "${SCIMAccessToken}" -e "${SCIMEndpointUrl}" -u "${GoogleAdminEmail}" -i "${IdentityStoreID}" -r "${Region}" -s "groups" -g "name:AWS*"; ExitState=$?
 
       - |
         if expr "${ExitState}" : "${ExpectedExitState}" >/dev/null; then
