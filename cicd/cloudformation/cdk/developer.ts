@@ -330,7 +330,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
     const actionSmokeTests_CLI = new codepipeline_actions.CodeBuildAction({
       actionName: 'CLI',
       project: buildSmokeCLI,
-      input: sourceOutput,
+      input: buildOutput,
       extraInputs: [testsOutput],
       outputs: [smokeCLIOutput],
     });
@@ -405,25 +405,6 @@ export class SSOSyncPipelineStack extends cdk.Stack {
       ]
     });
 
-
-    pipeline.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['ssm:Get*'],
-        resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/SSOSync-Staging/*`]
-      }));
-    //grant read for secrets
-    pipeline.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['secretsmanager:GetSecretValue'],
-        resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret/ssosync-staging/*`]
-      }));
-    //grant access to KMS Key to decrypt secret
-    pipeline.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['kms:Decrypt', 'kms:DescribeKey'],
-        resources: [SSOSync.imports.KeyForSecretsParam()]
-      }));
-
     pipeline.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["codestar-connections:UseConnection"],
@@ -438,7 +419,7 @@ export class SSOSyncPipelineStack extends cdk.Stack {
     buildStaging.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['secretsmanager:GetSecretValue'],
-        resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret/ssosync-staging/*`]
+        resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:ssosync-staging/*`]
       }));
     //grant access to KMS Key to decrypt secret
     buildStaging.addToRolePolicy(
@@ -461,7 +442,8 @@ export class SSOSyncPipelineStack extends cdk.Stack {
     buildSmokeCLI.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['secretsmanager:GetSecretValue'],
-        resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret/ssosync-staging/*`]
+        //GetSecretValue on resource: ssosync-staging/aws/SCIMAccessToken
+        resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:ssosync-staging/*`]
       }));
     buildSmokeCLI.addToRolePolicy(
       new iam.PolicyStatement({
