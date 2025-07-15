@@ -74,5 +74,5 @@ deploy: package
 	sam deploy --stack-name $(STACK_NAME) --template-file $(PACKAGED_TEMPLATE) --capabilities CAPABILITY_IAM
 
 .PHONY: run-dev-arm64
-run-dev: go-build
-	./dist/ssosync_linux_arm64_v8.2/ssosync -t $$(jq '.["ssosync/aws-sso/scimEndpointAccessToken"]' ./cicd/cloudformation/cdk/cdk.context.json -r) -r $$(jq '.["ssosync/aws-sso/region"]' ./cicd/cloudformation/cdk/cdk.context.json -r) -e $$(jq '.["ssosync/aws-sso/scimEndpointUrl"]' ./cicd/cloudformation/cdk/cdk.context.json -r) -u $$(jq '.["ssosync/secrets/googleAdminEmail"]' ./cicd/cloudformation/cdk/cdk.context.json -r) -i $$(jq '.["ssosync/aws-sso/identityStoreId"]' ./cicd/cloudformation/cdk/cdk.context.json -r) -c ./cicd/cloudformation/cdk/google-service-account.json --log-level debug
+run-dev-arm64: go-build
+	./dist/ssosync_linux_arm64_v8.2/ssosync -g "name:AWS*" -t $$(jq '.["ssosync/aws-sso/scimEndpointAccessToken"]' ./cicd/cloudformation/cdk/cdk.context.json -r) -r $$(jq '.["ssosync/aws-sso/region"]' ./cicd/cloudformation/cdk/cdk.context.json -r) -e $$(jq '.["ssosync/aws-sso/scimEndpointUrl"]' ./cicd/cloudformation/cdk/cdk.context.json -r) -u $$(jq '.["ssosync/secrets/googleAdminEmail"]' ./cicd/cloudformation/cdk/cdk.context.json -r) -i $$(jq '.["ssosync/aws-sso/identityStoreId"]' ./cicd/cloudformation/cdk/cdk.context.json -r) -c ./cicd/cloudformation/cdk/google-service-account.json --log-level debug

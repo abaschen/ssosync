@@ -446,12 +446,28 @@ export class SSOSyncPipelineStack extends cdk.Stack {
         actions: ['kms:Decrypt', 'kms:DescribeKey'],
         resources: [SSOSync.imports.KeyForSecretsParam()]
       }));
+
     buildSmokeLambda.addToRolePolicy(new iam.PolicyStatement({
       //allow lambda invoke of SSOSyncFunction
       actions: ['lambda:InvokeFunction'],
       resources: [importedSSOSyncFunction.functionArn],
     }));
-
+    buildSmokeCLI.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['ssm:Get*'],
+        resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/SSOSync-Staging/*`]
+      }));
+    //grant read for secrets
+    buildSmokeCLI.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret/ssosync-staging/*`]
+      }));
+    buildSmokeCLI.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['kms:Decrypt', 'kms:DescribeKey'],
+        resources: [SSOSync.imports.KeyForSecretsParam()]
+      }));
 
     // buildApp.addToRolePolicy(
     //   new iam.PolicyStatement({

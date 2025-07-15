@@ -8,7 +8,7 @@ env:
     SCIMEndpointUrl: /SSOSync-Staging/aws/SCIMEndpointUrl
     IdentityStoreID: /SSOSync-Staging/aws/IdentityStoreId
     GoogleAdminEmail: /SSOSync-Staging/google/SSOSyncGoogleAdminEmail
-    Region: /SSOSync-Staging/aws/Region
+    Region: /SSOSync-Staging/aws/SSORegion
 
   variables:
     ExpectedExitState: 0

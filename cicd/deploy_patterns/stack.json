@@ -42,7 +42,7 @@
         },
         "RegionParam": {
             "Type": "String",
-            "Default": "/SSOSync/aws/Region"
+            "Default": "/SSOSync/aws/SSORegion"
         },
         "IdentityStoreIdParam": {
             "Type": "String",

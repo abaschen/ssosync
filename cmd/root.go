@@ -230,7 +230,7 @@ func configLambda() {
 	cfg.GoogleAdmin = getParameterWithCache(ctx, ssmClient, getEnv("GOOGLE_ADMIN", "/SSOSync/google/AdminEmail"))
 	cfg.SCIMEndpoint = getParameterWithCache(ctx, ssmClient, getEnv("SCIM_ENDPOINT", "/SSOSync/aws/SCIMEndpointUrl"))
 	cfg.IdentityStoreID = getParameterWithCache(ctx, ssmClient, getEnv("IDENTITY_STORE_ID", "/SSOSync/aws/IdentityStoreId"))
-	cfg.Region = getParameterWithCache(ctx, ssmClient, getEnv("REGION", "/SSOSync/aws/Region"))
+	cfg.Region = getParameterWithCache(ctx, ssmClient, getEnv("REGION", "/SSOSync/aws/SSORegion"))
 
 	// Get sensitive values from Secrets Manager with caching
 	cfg.GoogleCredentials = getSecretFromCache(getEnv("GOOGLE_CREDENTIALS", "ssosync/google/ServiceAccountCredentials"))
