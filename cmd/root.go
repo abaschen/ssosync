@@ -272,14 +272,12 @@ func configLambda() {
 		log.WithField("IgnoreUsers", unwrap).Debug("from EnvVar")
 	}
 
-	unwrap = os.Getenv("PRECACHE_QUERIES")
-	if len([]rune(unwrap)) != 0 {
+	if unwrap := os.Getenv("PRECACHE_QUERIES"); unwrap != "" && len([]rune(unwrap)) != 0 {
 		cfg.PrecacheQueries = unwrap
 		log.WithField("PrecacheQueries", unwrap).Debug("from EnvVar")
 	}
 
-	unwrap = os.Getenv("INCLUDE_GROUPS")
-	if len([]rune(unwrap)) != 0 {
+	if unwrap := os.Getenv("INCLUDE_GROUPS"); unwrap != "" && len([]rune(unwrap)) != 0 {
 		cfg.IncludeGroups = strings.Split(unwrap, ",")
 		log.WithField("IncludeGroups", unwrap).Debug("from EnvVar")
 	}
