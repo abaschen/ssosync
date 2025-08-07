@@ -43,3 +43,12 @@ staging.yaml
 cicd/.DS_Store
 *.swo
 cicd/.DS_Store
+.pnpm-store/
+node_modules/
+internal/mocks/*.go
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.lock.hcl
+google-service-account.json
+*.auto.tfvars
