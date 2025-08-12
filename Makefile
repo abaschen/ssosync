@@ -13,12 +13,14 @@ GOREL ?= goreleaser
 MOCKERY_VERSION ?= v3.5.2
 GOLANGCI_LINT_VERSION ?= v2.3.1
 GORELEASER_VERSION ?= v2.11.2
+UPX_VERSION ?= v4.2.4
 
 # Tool installation paths
 TOOLS_DIR := $(shell pwd)/.bin
 MOCKERY := $(TOOLS_DIR)/mockery
 GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint
 GORELEASER_BIN := $(TOOLS_DIR)/goreleaser
+UPX := $(TOOLS_DIR)/upx
 
 # Detect OS and architecture
 OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
@@ -31,7 +33,7 @@ ifeq ($(ARCH),aarch64)
 endif
 
 .PHONY: install-deps
-install-deps: install-mockery install-golangci-lint install-goreleaser
+install-deps: install-mockery install-golangci-lint install-goreleaser install-upx
 	@echo "All development dependencies installed"
 
 .PHONY: install-mockery
@@ -72,6 +74,29 @@ install-goreleaser:
 		echo "goreleaser $(GORELEASER_VERSION) installed"; \
 	else \
 		echo "goreleaser $(GORELEASER_VERSION) already installed"; \
+	fi
+
+.PHONY: install-upx
+install-upx:
+	@echo "Installing upx $(UPX_VERSION)..."
+	@mkdir -p $(TOOLS_DIR)
+	@if [ ! -f $(UPX) ] || [ "$$($(UPX) --version 2>/dev/null | head -1 | grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+')" != "$(UPX_VERSION)" ]; then \
+		UPX_ARCH=$(ARCH); \
+		if [ "$(ARCH)" = "amd64" ]; then UPX_ARCH="amd64"; fi; \
+		if [ "$(ARCH)" = "arm64" ]; then UPX_ARCH="arm64"; fi; \
+		if [ "$(OS)" = "linux" ]; then \
+			UPX_FILE="upx-$(UPX_VERSION:v%=%)-$${UPX_ARCH}_linux"; \
+		elif [ "$(OS)" = "darwin" ]; then \
+			UPX_FILE="upx-$(UPX_VERSION:v%=%)-amd64_macos"; \
+		else \
+			echo "Error: Unsupported OS $(OS) for UPX installation"; \
+			exit 1; \
+		fi; \
+		curl -sSfL https://github.com/upx/upx/releases/download/$(UPX_VERSION)/$${UPX_FILE}.tar.xz | tar -xJ -C $(TOOLS_DIR) --strip-components=1 $${UPX_FILE}/upx; \
+		chmod +x $(UPX); \
+		echo "upx $(UPX_VERSION) installed"; \
+	else \
+		echo "upx $(UPX_VERSION) already installed"; \
 	fi
 
 .PHONY: generate-mock
@@ -197,6 +222,7 @@ check-tools:
 	@if [ -f $(MOCKERY) ]; then echo "✓ mockery: $$($(MOCKERY) version)"; else echo "✗ mockery: not installed"; fi
 	@if [ -f $(GOLANGCI_LINT) ]; then echo "✓ golangci-lint: $$($(GOLANGCI_LINT) --version)"; else echo "✗ golangci-lint: not installed"; fi
 	@if [ -f $(GORELEASER_BIN) ]; then echo "✓ goreleaser: $$($(GORELEASER_BIN) --version)"; else echo "✗ goreleaser: not installed"; fi
+	@if [ -f $(UPX) ]; then echo "✓ upx: $$($(UPX) --version 2>/dev/null | head -1)"; else echo "✗ upx: not installed"; fi
 	@echo "Go version: $$(go version)"
 
 .PHONY: setup
@@ -211,7 +237,7 @@ ci: fmt vet test
 help:
 	@echo "Available targets:"
 	@echo "  setup           - Install all dependencies and setup development environment"
-	@echo "  install-deps    - Install all development dependencies (mockery, golangci-lint, goreleaser)"
+	@echo "  install-deps    - Install all development dependencies (mockery, golangci-lint, goreleaser, upx)"
 	@echo "  check-tools     - Check status of installed tools"
 	@echo "  fmt             - Format code and tidy modules"
 	@echo "  generate-mock   - Generate mocks using mockery"

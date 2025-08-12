@@ -18,10 +18,12 @@
 
 ## Build System & Tools
 - **GoReleaser**: Release automation and cross-platform builds
-- **Makefile**: Build orchestration
+- **Makefile**: Build orchestration with automated tool management
 - **AWS SAM**: Serverless application deployment
 - **golangci-lint**: Code quality with specific linters:
   - errcheck, govet, ineffassign, staticcheck, unused, gosec, testifylint
+- **mockery**: Mock generation for testing interfaces
+- **upx**: Executable compression (reduces binary size by ~75%)
 
 ## Common Commands
 

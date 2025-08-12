@@ -8,9 +8,10 @@ env:
     GO111MODULE: "on"
     git-credential-helper: yes
     GOVERSION: go1.24.3
-    VERSION_LINT: v2.1.6
-    VERSION_MOCKERY: v3.3.2
-    VERSION_GOREL: v2.9.0
+    #MOCKERY_VERSION: v3.5.2
+    #GOLANGCI_LINT_VERSION: v2.3.1
+    #GORELEASER_VERSION: v2.11.2
+    #UPX_VERSION: v4.2.4
     GOREL_ARGS: --verbose
   exported-variables:
     - AppVersion
@@ -28,13 +29,11 @@ phases:
       - cd $BUILD_DIR
       - goenv install ${GOVERSION#go}
       - goenv global ${GOVERSION#go}
-      # Install tools
-      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b "$(goenv prefix)/bin/" v2.1.6
-      - wget -qO- https://github.com/goreleaser/goreleaser/releases/download/${VERSION_GOREL}/goreleaser_Linux_x86_64.tar.gz | gunzip | tar xvf - -C "$(goenv prefix)/bin/"
-      - wget -qO- https://github.com/vektra/mockery/releases/download/${VERSION_MOCKERY}/mockery_${VERSION_MOCKERY#v}_Linux_x86_64.tar.gz | gunzip | tar xvf - -C "$(goenv prefix)/bin/"
+      # Install development tools using Makefile
+      - make install-deps
       - goenv rehash
-      - golangci-lint --version
-      - mockery version
+      # Verify tool installations
+      - make check-tools
 
   pre_build:
     commands:
@@ -86,6 +85,7 @@ cache:
   paths:
     - /root/.cache/go-build/**/*
     - "/go/pkg/**/*"
+    - ".bin/**/*"  # Cache development tools installed by Makefile
   key: $GOVERSION-$(codebuild-hash-files 'go.sum')
 artifacts:
   files:

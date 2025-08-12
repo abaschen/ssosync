@@ -63,6 +63,7 @@ upx:
     goarch: [arm, arm64, amd64]
     compress: best
     lzma: true
+    binary: .bin/upx
 
 checksum:
   name_template: "{{ .ProjectName }}_checksums.txt"

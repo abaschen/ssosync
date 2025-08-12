@@ -298,6 +298,7 @@ make clean-all
 - **mockery v3.5.2**: Mock generation for testing
 - **golangci-lint v2.3.1**: Comprehensive linting
 - **goreleaser v2.11.2**: Release automation
+- **upx v4.2.4**: Executable compression
 
 ## ⚠️ Important Notes
 
