@@ -23,6 +23,8 @@ import (
 	net_url "net/url"
 	"strings"
 
+	"github.com/awslabs/ssosync/internal/constants"
+
 	internal_http "github.com/awslabs/ssosync/internal/http"
 	"github.com/awslabs/ssosync/internal/interfaces"
 	log "github.com/sirupsen/logrus"
@@ -112,15 +114,14 @@ func (c *client) prepareRequest(method string, path string, body any) (req *http
 	log.WithFields(log.Fields{"url": c.baseURL, "path": path, "method": method}).Debug("Preparing request")
 
 	// Set the content-type and authorization headers
-	req.Header.Set("Content-Type", "application/scim+json")
+	req.Header.Set("Content-Type", constants.ContentTypeSCIM)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.bearerToken))
 	return req, nil
 }
 
 func close(body io.ReadCloser) {
-	err := body.Close()
-	if err != nil {
-		log.Fatal(err)
+	if err := body.Close(); err != nil {
+		log.WithError(err).Warn("Failed to close response body")
 	}
 }
 

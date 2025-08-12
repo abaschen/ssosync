@@ -19,10 +19,12 @@ import (
 	"context"
 	"errors"
 	"os"
+	"time"
 
 	"github.com/awslabs/ssosync/internal/aws"
 	"github.com/awslabs/ssosync/internal/aws/identitystore"
 	"github.com/awslabs/ssosync/internal/config"
+	"github.com/awslabs/ssosync/internal/constants"
 	"github.com/awslabs/ssosync/internal/google"
 	"github.com/awslabs/ssosync/internal/interfaces"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
@@ -49,7 +51,10 @@ type syncGSuite struct {
 	cfg           *config.Config
 	identityStore interfaces.IdentityStoreAPI
 
-	users map[string]*interfaces.User
+	users            map[string]*interfaces.User
+	ignoreUsersSet   map[string]struct{}
+	ignoreGroupsSet  map[string]struct{}
+	includeGroupsSet map[string]struct{}
 }
 
 // New will create a new SyncGSuite object
@@ -227,7 +232,7 @@ func (s *syncGSuite) SyncGroups(query string) error {
 			group = newGroup
 		}
 
-		groupMembers, err := s.google.GetGroupMembers(g)
+		groupMembers, err := s.google.GetGroupMembers(context.Background(), g)
 		if err != nil {
 			return err
 		}
@@ -411,7 +416,7 @@ func (s *syncGSuite) SyncGroupsUsers(queryGroups string, queryUsers string) erro
 		_, err := s.aws.CreateUser(awsUser)
 		if err != nil {
 			errHTTP := new(aws.ErrHTTPNotOK)
-			if errors.As(err, &errHTTP) && errHTTP.StatusCode == 409 {
+			if errors.As(err, &errHTTP) && errHTTP.StatusCode == constants.StatusConflict {
 				log.WithField("user", awsUser.Username).Warn("user already exists")
 				continue
 			}
@@ -844,9 +849,12 @@ func DoSync(ctx context.Context, cfg *config.Config) error {
 		o.Region = cfg.Region
 	})
 
-	//FIXME can be problematic in case of high volume just for a test.
+	// Perform a lightweight test query to validate connectivity
+	testCtx, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
+
 	response, err := identitystore.ListGroups(
-		context.Background(),
+		testCtx,
 		identityStoreClient,
 		&cfg.IdentityStoreID,
 		func(g identitystore_types.Group) *interfaces.Group {
@@ -888,33 +896,36 @@ func DoSync(ctx context.Context, cfg *config.Config) error {
 }
 
 func (s *syncGSuite) ignoreUser(name string) bool {
-	for _, u := range s.cfg.IgnoreUsers {
-		if u == name {
-			return true
+	if s.ignoreUsersSet == nil {
+		s.ignoreUsersSet = make(map[string]struct{}, len(s.cfg.IgnoreUsers))
+		for _, u := range s.cfg.IgnoreUsers {
+			s.ignoreUsersSet[u] = struct{}{}
 		}
 	}
-
-	return false
+	_, exists := s.ignoreUsersSet[name]
+	return exists
 }
 
 func (s *syncGSuite) ignoreGroup(name string) bool {
-	for _, g := range s.cfg.IgnoreGroups {
-		if g == name {
-			return true
+	if s.ignoreGroupsSet == nil {
+		s.ignoreGroupsSet = make(map[string]struct{}, len(s.cfg.IgnoreGroups))
+		for _, g := range s.cfg.IgnoreGroups {
+			s.ignoreGroupsSet[g] = struct{}{}
 		}
 	}
-
-	return false
+	_, exists := s.ignoreGroupsSet[name]
+	return exists
 }
 
 func (s *syncGSuite) includeGroup(name string) bool {
-	for _, g := range s.cfg.IncludeGroups {
-		if g == name {
-			return true
+	if s.includeGroupsSet == nil {
+		s.includeGroupsSet = make(map[string]struct{}, len(s.cfg.IncludeGroups))
+		for _, g := range s.cfg.IncludeGroups {
+			s.includeGroupsSet[g] = struct{}{}
 		}
 	}
-
-	return false
+	_, exists := s.includeGroupsSet[name]
+	return exists
 }
 
 func ConvertIdentityStoreGroupToAWSGroup(group identitystore_types.Group) *interfaces.Group {
@@ -929,7 +940,7 @@ func ConvertIdentityStoreGroupToAWSGroup(group identitystore_types.Group) *inter
 	log.WithField("groupId", group.GroupId).WithField("displayName", group.DisplayName).Debug("Group converted")
 	return &interfaces.Group{
 		ID:          *group.GroupId,
-		Schemas:     []string{"urn:ietf:params:scim:schemas:core:2.0:Group"},
+		Schemas:     []string{constants.SCIMSchemaGroup},
 		DisplayName: *group.DisplayName,
 		Members:     []string{},
 	}
@@ -1003,7 +1014,7 @@ func ConvertSdkUserObjToNative(user identitystore_types.User) *interfaces.User {
 
 	return &interfaces.User{
 		ID:       *user.UserId,
-		Schemas:  []string{"urn:ietf:params:scim:schemas:core:2.0:User"},
+		Schemas:  []string{constants.SCIMSchemaUser},
 		Username: *user.UserName,
 		Name: struct {
 			FamilyName string `json:"familyName"`
@@ -1099,7 +1110,7 @@ func (s *syncGSuite) getGoogleUsersInGroup(group *admin.Group, userCache map[str
 	log.WithField("Email:", group.Email).Debug("getGoogleGroupMembers()")
 
 	// retrieve the members of the group
-	groupMembers, err := s.google.GetGroupMembers(group)
+	groupMembers, err := s.google.GetGroupMembers(context.Background(), group)
 	if err != nil {
 		return nil
 	}

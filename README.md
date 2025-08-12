@@ -1,17 +1,60 @@
 # SSO Sync
 
-![Github Action](https://github.com/awslabs/ssosync/workflows/main/badge.svg)
-<a href='https://github.com/jpoles1/gopherbadger' target='_blank'>![gopherbadger-tag-do-not-edit](https://img.shields.io/badge/Go%20Coverage-42%25-brightgreen.svg?longCache=true&style=flat)</a>
+[![GitHub Actions](https://github.com/awslabs/ssosync/workflows/main/badge.svg)](https://github.com/awslabs/ssosync/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/awslabs/ssosync)](https://goreportcard.com/report/github.com/awslabs/ssosync)
 [![License Apache 2](https://img.shields.io/badge/License-Apache2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Taylor Swift](https://img.shields.io/badge/secured%20by-taylor%20swift-brightgreen.svg)](https://twitter.com/SwiftOnSecurity)
+[![Go Version](https://img.shields.io/badge/Go-1.24-blue.svg)](https://golang.org/dl/)
+[![AWS Lambda](https://img.shields.io/badge/AWS-Lambda-orange.svg)](https://aws.amazon.com/lambda/)
 
-## Quick Start
-Want to dive straight in get ssosync up and running? Then this [lab](https://catalog.workshops.aws/control-tower/en-US/authentication-authorization/google-workspace) in the [AWS Control Tower Workshop](https://catalog.workshops.aws/control-tower/en-US) (you don't need AWS Control Tower, this lab only uses IAM Identity Center which is typically deployed by AWS Control Tower).  The lab will guide you through the full setup process on both AWS and Google Workspace, using the Lambda from the Serverless application repository, which is the recommend and simplist deployment method.
+**Synchronize Google Workspace users and groups to AWS IAM Identity Center (formerly AWS SSO)**
 
-> Helping you populate AWS SSO directly with your Google Apps users
+SSO Sync is a powerful CLI tool and AWS Lambda function that automatically synchronizes your Google Workspace directory with AWS IAM Identity Center, eliminating manual user management and ensuring your AWS access stays in sync with your organization's identity provider.
 
-SSO Sync will run on any platform that Go can build for. It is available in the [AWS Serverless Application Repository](https://console.aws.amazon.com/lambda/home#/create/app?applicationId=arn:aws:serverlessrepo:us-east-2:004480582608:applications/SSOSync)
+## 📑 Table of Contents
+
+- [🚀 Quick Start](#-quick-start)
+- [✨ Features](#-features)
+- [🎯 Why SSO Sync?](#-why-sso-sync)
+- [📋 Prerequisites](#-prerequisites)
+- [🏗️ Architecture](#️-architecture)
+- [📦 Installation & Deployment](#-installation--deployment)
+- [⚙️ Configuration](#️-configuration)
+- [🚀 Usage](#-usage)
+- [⚠️ Important Notes](#️-important-notes)
+- [🔧 Troubleshooting](#-troubleshooting)
+- [📊 Monitoring & Metrics](#-monitoring--metrics)
+- [🤝 Contributing](#-contributing)
+- [📚 Additional Resources](#-additional-resources)
+- [📄 License](#-license)
+
+## 🚀 Quick Start
+
+### Option 1: AWS Serverless Application Repository (Recommended)
+Deploy directly from the [AWS Serverless Application Repository](https://console.aws.amazon.com/lambda/home#/create/app?applicationId=arn:aws:serverlessrepo:us-east-2:004480582608:applications/SSOSync) - the fastest way to get started.
+
+### Option 2: Guided Workshop
+Follow this comprehensive [lab](https://catalog.workshops.aws/control-tower/en-US/authentication-authorization/google-workspace) in the AWS Control Tower Workshop for step-by-step setup instructions.
+
+### Option 3: Local Development
+```bash
+# Clone and build
+git clone https://github.com/awslabs/ssosync.git
+cd ssosync
+make setup    # Install all dependencies
+make build    # Build the application
+```
+
+## ✨ Features
+
+- **🔄 Bidirectional Sync**: Automatically sync users and groups from Google Workspace to AWS IAM Identity Center
+- **🚀 Multiple Deployment Options**: CLI tool, AWS Lambda, or Serverless Application Repository
+- **⚡ High Performance**: Optimized with caching and efficient API usage for large directories
+- **🎯 Flexible Filtering**: Advanced user/group matching patterns and ignore lists
+- **🔧 Two Sync Methods**:
+  - `groups` (default): Sync based on Google groups and their members
+  - `users_groups`: Sync users first, then groups and memberships
+- **🛡️ Production Ready**: Includes retry logic, error handling, and comprehensive logging
+- **📊 Monitoring**: Built-in metrics and health checks
 
 > [!CAUTION]
 > When using ssosync with an instance of IAM Identity Center integrated with AWS Control Tower. AWS Control Tower creates a number of groups and users (directly via the Identity Store API), when an external identity provider is configured these users and groups are can not be used to log in. However it is important to remember that because ssosync implemements a uni-directional sync it will make the IAM Identity Store match the subset of your Google Workspaces directory you specify, including removing these groups and users created by AWS Control Tower. There is a PFR [#179 Configurable handling of 'manually created' Users/Groups in IAM Identity Center](https://github.com/awslabs/ssosync/issues/179) to implement an option to ignore these users and groups, hopefully this will be implemented in version 3.x. However, this has a dependancy on PFR [#166 Ensure all groups/user creates in IAM Identity Store are via SCIM api and populate externalId field](https://github.com/awslabs/ssosync/issues/166), to be able to reliably and consistently disinguish between **SCIM Provisioned** users from **Manually Created** users
@@ -44,9 +87,120 @@ SSO Sync will run on any platform that Go can build for. It is available in the 
 > [!IMPORTANT]
 > `>= 2.3.0` switched to using `provided.al2023` powered by ARM64 instances with golang 1.24 binaries.
 
-## Why?
+## 🎯 Why SSO Sync?
 
-As per the [AWS SSO](https://aws.amazon.com/single-sign-on/) Homepage:
+AWS IAM Identity Center (formerly AWS SSO) is a powerful service for managing access to multiple AWS accounts and applications. However, it has limited built-in support for identity providers beyond Azure AD.
+
+**The Challenge:**
+- Manual user management in AWS IAM Identity Center is time-consuming and error-prone
+- AWS SSO only has native support for Azure AD automatic provisioning
+- Google Workspace users need to be manually created and maintained
+
+**The Solution:**
+SSO Sync bridges this gap by providing automated synchronization between Google Workspace and AWS IAM Identity Center using the SCIM protocol and AWS Identity Store API.
+
+### Key Benefits
+
+- **🕒 Save Time**: Eliminate manual user provisioning and deprovisioning
+- **🔒 Improve Security**: Ensure users are removed from AWS when they leave your organization
+- **📈 Scale Easily**: Handle hundreds or thousands of users automatically
+- **🎯 Stay Synchronized**: Keep AWS access in sync with your Google Workspace directory
+- **⚙️ Flexible Configuration**: Fine-tune sync behavior with filters and patterns
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have:
+
+### Google Workspace Requirements
+- Google Workspace admin access
+- Ability to create service accounts in Google Cloud Console
+- Domain admin privileges for directory access
+
+### AWS Requirements
+- AWS account with IAM Identity Center enabled
+- Appropriate permissions to create Lambda functions (if using Lambda deployment)
+- Access to the IAM Identity Center delegated administration account
+
+### Development Requirements (for local development)
+- Go 1.24 or later
+- Make (for build automation)
+- Git
+
+## 🏗️ Architecture
+
+### High-Level Data Flow
+
+```mermaid
+graph LR
+    A[Google Workspace<br/>Directory] --> B[SSO Sync<br/>Application]
+    B --> C[AWS IAM<br/>Identity Center]
+    B --> D[AWS Identity<br/>Store API]
+    
+    style A fill:#4285f4,stroke:#333,stroke-width:2px,color:#fff
+    style B fill:#ff9900,stroke:#333,stroke-width:2px,color:#fff
+    style C fill:#ff9900,stroke:#333,stroke-width:2px,color:#fff
+    style D fill:#ff9900,stroke:#333,stroke-width:2px,color:#fff
+```
+
+### Sync Process Flow
+
+```mermaid
+sequenceDiagram
+    participant GW as Google Workspace
+    participant SS as SSO Sync
+    participant AWS as AWS Identity Center
+    participant IS as Identity Store API
+    
+    Note over SS: Sync Process Started
+    
+    SS->>GW: Authenticate with Service Account
+    GW-->>SS: Authentication Success
+    
+    SS->>GW: Fetch Users (with filters)
+    GW-->>SS: Return User List
+    
+    SS->>GW: Fetch Groups (with filters)
+    GW-->>SS: Return Group List
+    
+    SS->>GW: Fetch Group Members
+    GW-->>SS: Return Member Lists
+    
+    Note over SS: Process & Filter Data
+    
+    SS->>IS: List Existing Users
+    IS-->>SS: Current User List
+    
+    SS->>IS: List Existing Groups
+    IS-->>SS: Current Group List
+    
+    Note over SS: Calculate Differences
+    
+    loop For Each User Change
+        SS->>AWS: Create/Update/Delete User (SCIM)
+        AWS-->>SS: Operation Result
+    end
+    
+    loop For Each Group Change
+        SS->>IS: Create/Update/Delete Group
+        IS-->>SS: Operation Result
+    end
+    
+    loop For Each Membership Change
+        SS->>IS: Add/Remove Group Membership
+        IS-->>SS: Operation Result
+    end
+    
+    Note over SS: Sync Complete
+```
+
+### How SSO Sync Works
+
+1. **🔐 Authentication**: Connects to Google Workspace using service account credentials
+2. **📥 Data Retrieval**: Fetches users, groups, and memberships from Google Directory API
+3. **🔍 Filtering**: Applies user-defined filters and ignore patterns
+4. **📊 Comparison**: Compares Google data with current AWS IAM Identity Center state
+5. **🔄 Synchronization**: Creates, updates, or deletes users and groups via SCIM and Identity Store APIs
+6. **✅ Validation**: Ensures data consistency between both systems
 
 > AWS Single Sign-On (SSO) makes it easy to centrally manage access
 > to multiple AWS accounts and business applications and provide users
@@ -73,28 +227,131 @@ what it is going to do.
  * [AWS SSO - Automatic Provisioning](https://docs.aws.amazon.com/singlesignon/latest/userguide/provision-automatically.html)
  * [AWS IAM Identity Center - Identity Store API](https://docs.aws.amazon.com/singlesignon/latest/IdentityStoreAPIReference/welcome.html)
 
-## Installation
+## 📦 Installation & Deployment
 
-The recommended installation is:
-* [Setup IAM Identity Center](https://docs.aws.amazon.com/singlesignon/latest/userguide/get-started-enable-identity-center.html), in the management account of your organization
-* Created a linked account `Identity` Account from which to manage IAM Identity Center
-* [Delegate administration](https://docs.aws.amazon.com/singlesignon/latest/userguide/delegated-admin.html) to the `Identity` account
-* Deploy the [SSOSync app](https://console.aws.amazon.com/lambda/home#/create/app?applicationId=arn:aws:serverlessrepo:us-east-2:004480582608:applications/SSOSync) from the AWS Serverless Application Repository
+### Recommended Deployment (AWS Lambda)
 
+1. **Setup AWS IAM Identity Center**
+   - [Enable IAM Identity Center](https://docs.aws.amazon.com/singlesignon/latest/userguide/get-started-enable-identity-center.html) in your AWS organization's management account
+   - Create a dedicated `Identity` account for managing IAM Identity Center
+   - [Delegate administration](https://docs.aws.amazon.com/singlesignon/latest/userguide/delegated-admin.html) to the `Identity` account
 
-You can also:
-You can `go get github.com/awslabs/ssosync` or grab a Release binary from the release page. The binary
-can be used from your local computer, or you can deploy to AWS Lambda to run on a CloudWatch Event
-for regular synchronization.
+2. **Deploy from AWS Serverless Application Repository**
+   - Navigate to the [SSOSync app](https://console.aws.amazon.com/lambda/home#/create/app?applicationId=arn:aws:serverlessrepo:us-east-2:004480582608:applications/SSOSync)
+   - Configure the required parameters
+   - Deploy the application
 
-## Configuration
+### Alternative Deployment Options
 
-You need a few items of configuration. One side from AWS, and the other
-from Google Cloud to allow for API access to each. You should have configured
-Google as your Identity Provider for AWS SSO already.
+#### Option 1: Pre-built Binaries
+Download the latest release from the [GitHub releases page](https://github.com/awslabs/ssosync/releases):
 
-You will need the files produced by these steps for AWS Lambda deployment as well
-as locally running the ssosync tool.
+```bash
+# Download for your platform
+curl -L -o ssosync https://github.com/awslabs/ssosync/releases/latest/download/ssosync_linux_amd64
+chmod +x ssosync
+```
+
+#### Option 2: Build from Source
+```bash
+# Clone the repository
+git clone https://github.com/awslabs/ssosync.git
+cd ssosync
+
+# Setup development environment (installs all tools)
+make setup
+
+# Build the application
+make build
+
+# Run tests
+make test
+
+# Generate coverage report
+make test-coverage
+```
+
+#### Option 3: Go Install
+```bash
+go install github.com/awslabs/ssosync@latest
+```
+
+### Development Tools
+
+The project includes automated tool management:
+
+```bash
+# Install all development dependencies
+make install-deps
+
+# Check tool versions
+make check-tools
+
+# Run CI pipeline locally
+make ci
+
+# Clean everything
+make clean-all
+```
+
+**Included Tools:**
+- **mockery v3.5.2**: Mock generation for testing
+- **golangci-lint v2.3.1**: Comprehensive linting
+- **goreleaser v2.11.2**: Release automation
+
+## ⚠️ Important Notes
+
+### 🚨 Critical Considerations
+
+#### AWS Control Tower Integration
+> **⚠️ CAUTION**: When using SSO Sync with AWS Control Tower's IAM Identity Center integration, be aware that:
+> - AWS Control Tower creates default users and groups via the Identity Store API
+> - SSO Sync implements **uni-directional sync** and will make IAM Identity Store match your Google Workspace directory
+> - This may remove AWS Control Tower-created users and groups
+> - Future versions will include options to ignore manually created users/groups ([Issue #179](https://github.com/awslabs/ssosync/issues/179))
+
+#### Deployment Requirements
+> **📍 IMPORTANT**: For versions `>= 2.0.0`:
+> - Lambda deployments must be in the [IAM Identity Center delegated administration account](https://docs.aws.amazon.com/singlesignon/latest/userguide/delegated-admin.html)
+> - CLI usage requires credentials from the delegated administration account
+> - CloudFormation deployments require `CAPABILITY_NAMED_IAM` capability
+
+### 🔄 Version History & Breaking Changes
+
+| Version | Key Changes |
+|---------|-------------|
+| `>= 2.3.0` | ARM64 instances with Go 1.24, `provided.al2023` runtime |
+| `>= 2.2.0` | Multiple query patterns, nested group flattening, improved caching |
+| `>= 2.1.0` | Named IAM resources, ARM64 support |
+| `>= 2.0.0` | Identity Store API integration, delegated admin requirement |
+| `>= 1.0.0-rc.5` | Groups synced by email address, deletion behavior changes |
+| `>= 0.02` | Breaking changes introduced |
+
+### 🎯 Current Version Features
+
+**Enhanced Performance & Functionality:**
+- ✅ Multiple query patterns support (comma-separated)
+- ✅ Nested groups flattened to top-level groups  
+- ✅ External users automatically ignored
+- ✅ Group owners treated as regular members
+- ✅ User details caching for improved performance
+- ✅ ARM64 architecture support
+- ✅ Go 1.24 runtime
+
+## ⚙️ Configuration
+
+SSO Sync requires configuration from both Google Workspace and AWS. Follow these steps to set up the necessary credentials and permissions.
+
+### 🔧 Quick Configuration Checklist
+
+- [ ] Google Workspace service account created
+- [ ] Google Admin SDK API enabled
+- [ ] AWS IAM Identity Center automatic provisioning enabled
+- [ ] SCIM endpoint and access token obtained
+- [ ] Identity Store ID retrieved
+- [ ] Configuration validated
+
+### 📋 Detailed Configuration Steps
 
 ### Google
 
@@ -134,16 +391,94 @@ Additionally, authenticate your AWS credentials. Follow this  [section](https://
 
 To obtain your `Identity store ID`, go to the AWS Identity Center console and select settings. Under the `Identity Source` section, copy the `Identity store ID`.
 
-## Local Usage
+## 🚀 Usage
+
+### Command Line Interface
+
+After installation, you can use SSO Sync from the command line:
 
 ```bash
-git clone https://github.com/awslabs/ssosync.git
-cd ssosync/
-make go-build
+# Display help and all available options
+ssosync --help
+
+# Basic sync with minimal configuration
+ssosync \
+  --google-admin admin@yourcompany.com \
+  --google-credentials ./credentials.json \
+  --scim-endpoint https://scim.amazonaws.com/12345678-1234-1234-1234-123456789012/scim/v2/ \
+  --scim-access-token AQoDYXdzEJr... \
+  --region us-east-1 \
+  --identity-store-id d-1234567890
+
+# Sync specific groups only
+ssosync \
+  --google-admin admin@yourcompany.com \
+  --google-credentials ./credentials.json \
+  --scim-endpoint https://scim.amazonaws.com/12345678-1234-1234-1234-123456789012/scim/v2/ \
+  --scim-access-token AQoDYXdzEJr... \
+  --region us-east-1 \
+  --identity-store-id d-1234567890 \
+  --group-match "name:AWS*,email:aws-*" \
+  --sync-method groups
+
+# Sync with user filtering and ignore lists
+ssosync \
+  --google-admin admin@yourcompany.com \
+  --google-credentials ./credentials.json \
+  --scim-endpoint https://scim.amazonaws.com/12345678-1234-1234-1234-123456789012/scim/v2/ \
+  --scim-access-token AQoDYXdzEJr... \
+  --region us-east-1 \
+  --identity-store-id d-1234567890 \
+  --user-match "name:John*,email:admin*" \
+  --ignore-users "service@yourcompany.com,bot@yourcompany.com" \
+  --ignore-groups "temp-group@yourcompany.com" \
+  --log-level debug
 ```
 
+### Environment Variables
+
+You can also configure SSO Sync using environment variables:
+
 ```bash
-./ssosync --help
+export SSOSYNC_GOOGLE_ADMIN="admin@yourcompany.com"
+export SSOSYNC_GOOGLE_CREDENTIALS="./credentials.json"
+export SSOSYNC_SCIM_ENDPOINT="https://scim.amazonaws.com/12345678-1234-1234-1234-123456789012/scim/v2/"
+export SSOSYNC_SCIM_ACCESS_TOKEN="AQoDYXdzEJr..."
+export SSOSYNC_REGION="us-east-1"
+export SSOSYNC_IDENTITY_STORE_ID="d-1234567890"
+export SSOSYNC_LOG_LEVEL="info"
+export SSOSYNC_SYNC_METHOD="groups"
+
+# Run with environment variables
+ssosync
+```
+
+### Configuration Examples
+
+#### Example 1: Sync All AWS-Related Groups
+```bash
+ssosync \
+  --group-match "name:AWS*,email:aws-*" \
+  --sync-method groups \
+  --log-level info
+```
+
+#### Example 2: Sync Specific Users and Their Groups
+```bash
+ssosync \
+  --user-match "name:John*,email:admin*" \
+  --sync-method users_groups \
+  --log-level debug
+```
+
+#### Example 3: Full Directory Sync with Exclusions
+```bash
+ssosync \
+  --user-match "*" \
+  --group-match "*" \
+  --ignore-users "service@company.com,bot@company.com" \
+  --ignore-groups "temp@company.com,test@company.com" \
+  --sync-method groups
 ```
 
 ```bash
@@ -257,6 +592,130 @@ Deploy
 sam deploy --guided
 ```
 
-## License
+## 🔧 Troubleshooting
 
-[Apache-2.0](/LICENSE)
+### Common Issues
+
+#### Issue: "Error getting active status for user"
+**Solution**: Ensure your AWS credentials have the necessary permissions for the Identity Store API.
+
+#### Issue: "Problem establishing a connection to Google directory"
+**Solution**: 
+- Verify your service account credentials are correct
+- Ensure the Admin SDK API is enabled
+- Check that domain-wide delegation is properly configured
+
+#### Issue: "SCIM API rate limits errors"
+**Solution**: 
+- Reduce the frequency of sync operations
+- Use more specific filters to reduce the number of operations
+- Consider using the `--log-level debug` flag to identify bottlenecks
+
+#### Issue: "Groups not syncing"
+**Solution**:
+- Verify your `--group-match` parameter is correct
+- Check that groups exist in Google Workspace
+- Ensure groups are not in the ignore list
+
+### Performance Optimization
+
+For large directories (1000+ users/groups):
+
+1. **Use Specific Filters**: Instead of syncing everything, use targeted filters
+2. **Enable Caching**: The application automatically caches user details
+3. **Monitor Logs**: Use `--log-level info` to monitor performance
+4. **Schedule Appropriately**: Don't run sync too frequently
+
+### Debug Mode
+
+Enable debug logging for detailed troubleshooting:
+
+```bash
+ssosync --log-level debug --log-format json
+```
+
+## 📊 Monitoring & Metrics
+
+### Lambda Monitoring
+
+When deployed as a Lambda function, monitor:
+- **Execution Duration**: Should complete within timeout limits
+- **Memory Usage**: Monitor for memory spikes with large directories
+- **Error Rate**: Track failed executions
+- **CloudWatch Logs**: Review logs for sync details
+
+### Key Metrics to Track
+
+- Number of users synchronized
+- Number of groups synchronized
+- Sync execution time
+- API call rates and limits
+- Error rates and types
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Setup
+
+```bash
+# Clone and setup
+git clone https://github.com/awslabs/ssosync.git
+cd ssosync
+make setup
+
+# Run tests
+make test
+
+# Run linting
+make lint
+
+# Run full CI pipeline
+make ci
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+make test
+
+# Run tests with coverage
+make test-coverage
+
+# Run benchmarks
+go test -bench=. ./internal/ -benchmem
+
+# Run integration tests (requires credentials)
+go test -tags=integration ./...
+```
+
+## 📚 Additional Resources
+
+### Documentation
+- [AWS IAM Identity Center User Guide](https://docs.aws.amazon.com/singlesignon/latest/userguide/)
+- [Google Workspace Admin SDK](https://developers.google.com/admin-sdk)
+- [SCIM Protocol RFC](https://tools.ietf.org/html/rfc7644)
+
+### Related AWS Services
+- [AWS IAM Identity Center](https://aws.amazon.com/single-sign-on/)
+- [AWS Identity Store API](https://docs.aws.amazon.com/singlesignon/latest/IdentityStoreAPIReference/welcome.html)
+- [AWS Lambda](https://aws.amazon.com/lambda/)
+
+### Community
+- [GitHub Issues](https://github.com/awslabs/ssosync/issues)
+- [GitHub Discussions](https://github.com/awslabs/ssosync/discussions)
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- AWS Labs team for the original implementation
+- Contributors who have helped improve the project
+- The Go community for excellent tooling and libraries
+
+---
+
+**Made with ❤️ by the AWS Labs team**

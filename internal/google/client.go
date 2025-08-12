@@ -20,6 +20,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/awslabs/ssosync/internal/constants"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 	admin "google.golang.org/api/admin/directory/v1"
@@ -31,7 +32,7 @@ type Client interface {
 	GetUsers(string) ([]*admin.User, error)
 	GetDeletedUsers() ([]*admin.User, error)
 	GetGroups(string) ([]*admin.Group, error)
-	GetGroupMembers(*admin.Group) ([]*admin.Member, error)
+	GetGroupMembers(context.Context, *admin.Group) ([]*admin.Member, error)
 }
 
 type client struct {
@@ -84,12 +85,12 @@ func (c *client) GetDeletedUsers() ([]*admin.User, error) {
 }
 
 // GetGroupMembers will get the members of the group specified
-func (c *client) GetGroupMembers(g *admin.Group) ([]*admin.Member, error) {
+func (c *client) GetGroupMembers(ctx context.Context, g *admin.Group) ([]*admin.Member, error) {
 	log.Debugf("Getting members for group: %s (%s)", g.Name, g.Email)
 	m := make([]*admin.Member, 0)
 	var err error
 
-	err = c.service.Members.List(g.Id).Pages(context.TODO(), func(members *admin.Members) error {
+	err = c.service.Members.List(g.Id).Pages(ctx, func(members *admin.Members) error {
 		if err != nil {
 			return err
 		}
@@ -167,8 +168,8 @@ func (c *client) GetUsers(query string) ([]*admin.User, error) {
 	// Identity Store will accept and a 'space' for an empty name but not a 'zero width space'
 	// So we need to replace any 'zero width space' strings with a single 'space' to allow comparison and sync
 	for _, user := range u {
-		user.Name.GivenName = strings.ReplaceAll(user.Name.GivenName, string('\u200B'), " ")
-		user.Name.FamilyName = strings.ReplaceAll(user.Name.FamilyName, string('\u200B'), " ")
+		user.Name.GivenName = strings.ReplaceAll(user.Name.GivenName, string(constants.ZeroWidthSpace), " ")
+		user.Name.FamilyName = strings.ReplaceAll(user.Name.FamilyName, string(constants.ZeroWidthSpace), " ")
 	}
 
 	return u, err

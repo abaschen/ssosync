@@ -5,6 +5,9 @@
 *.so
 *.dylib
 
+# Development tools
+.bin/
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -50,3 +53,4 @@ internal/mocks/*.go
 google-service-account.json
 *.auto.tfvars
 /bootstrap
+coverage.*
