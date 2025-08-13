@@ -624,23 +624,23 @@ func (s *syncGSuite) getGoogleGroupsAndUsers(queryGroups string, queryUsers stri
 		log.Info("Precaching DISABLED, caching on the fly")
 	}
 
-        // For larger directories this will reduce execution time and avoid throttling limits
-        // however if you have directory with 10s of 1000s of users you may want to down scope 
-        // this to a specific OU path or disable by leaving empty.
-        if s.cfg.PrecacheQueries != "DISABLED" {
- 		log.Info("Precaching users from google, for the following querie strings '" + s.cfg.PrecacheQueries + "'.") 
-        	googleUsers, err = s.google.GetUsers(s.cfg.PrecacheQueries) 
+	// For larger directories this will reduce execution time and avoid throttling limits
+	// however if you have directory with 10s of 1000s of users you may want to down scope
+	// this to a specific OU path or disable by leaving empty.
+	if s.cfg.PrecacheQueries != "DISABLED" {
+		log.Info("Precaching users from google, for the following querie strings '" + s.cfg.PrecacheQueries + "'.")
+		googleUsers, err = s.google.GetUsers(s.cfg.PrecacheQueries)
 		if err != nil {
-                        return nil, nil, nil, err
-                }
+			return nil, nil, nil, err
+		}
 
 		if len(googleUsers) == 0 {
 			log.Warn("Precaching failed, caching on the fly")
 		} else {
-        		for _, u := range googleUsers {
-        	      		log.WithField("email", u).Debug("processing member of gUserDetailCache")
-                		gUserDetailCache[u.PrimaryEmail] = u
-        		}
+			for _, u := range googleUsers {
+				log.WithField("email", u).Debug("processing member of gUserDetailCache")
+				gUserDetailCache[u.PrimaryEmail] = u
+			}
 		}
 	} else {
 		log.Info("Precaching DISABLED, caching on the fly")
@@ -851,16 +851,13 @@ func DoSync(ctx context.Context, cfg *config.Config) error {
 	}
 
 	mkAwsScimClient := aws.NewClient
-	mkIdentityStoreClient := func(p awsclient.ConfigProvider, cfgs ...*aws_sdk.Config) identitystoreiface.IdentityStoreAPI {
-		return identitystore.New(p, cfgs...)
+	if cfg.DryRun {
+		mkAwsScimClient = aws.NewDryClient
 	}
 
 	if cfg.DryRun {
 		log.Warn("This is a DRY RUN - actions will *not* be actually performed")
 		defer log.Warn("This was a DRY RUN - actions were *not* actually performed")
-
-		mkAwsScimClient = aws.NewClient
-		mkIdentityStoreClient = aws.NewDryIdentityStore
 	}
 
 	awsScimClient, err := mkAwsScimClient(
@@ -883,6 +880,12 @@ func DoSync(ctx context.Context, cfg *config.Config) error {
 	identityStoreClient := aws_identitystore.NewFromConfig(aws_cfg, func(o *aws_identitystore.Options) {
 		o.Region = cfg.Region
 	})
+
+	// Wrap with dry run client if in dry run mode
+	var finalIdentityStoreClient interfaces.IdentityStoreAPI = identityStoreClient
+	if cfg.DryRun {
+		finalIdentityStoreClient = aws.NewDryIdentityStore(identityStoreClient)
+	}
 
 	// Perform a lightweight test query to validate connectivity
 	testCtx, cancel := context.WithTimeout(ctx, time.Second*30)
@@ -907,7 +910,7 @@ func DoSync(ctx context.Context, cfg *config.Config) error {
 	// 1. SCIM API client
 	// 2. Google Directory API client
 	// 3. Identity Store Public API client
-	c := New(cfg, awsScimClient, googleClient, identityStoreClient)
+	c := New(cfg, awsScimClient, googleClient, finalIdentityStoreClient)
 
 	log.WithField("sync_method", cfg.SyncMethod).Info("syncing")
 	if cfg.SyncMethod == config.DefaultSyncMethod {

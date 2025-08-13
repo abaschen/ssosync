@@ -197,12 +197,12 @@ func initConfig() {
 
 var secretCache *secretcache.Cache
 
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
+// func getEnv(key, fallback string) string {
+// 	if value, ok := os.LookupEnv(key); ok {
+// 		return value
+// 	}
+// 	return fallback
+// }
 
 func configLambda() {
 	ctx := context.Background()
@@ -222,7 +222,7 @@ func configLambda() {
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "Failed to create secret cache").Error())
 	}
-	
+
 	// Get sensitive values from Secrets Manager with caching
 	cfg.GoogleAdmin = getSecretFromCache(os.Getenv("GOOGLE_ADMIN"))
 	cfg.SCIMEndpoint = getSecretFromCache(os.Getenv("SCIM_ENDPOINT"))
@@ -230,7 +230,7 @@ func configLambda() {
 	cfg.Region = getSecretFromCache(os.Getenv("REGION"))
 	cfg.GoogleCredentials = getSecretFromCache(os.Getenv("GOOGLE_CREDENTIALS"))
 	cfg.SCIMAccessToken = getSecretFromCache(os.Getenv("SCIM_ACCESS_TOKEN"))
-	
+
 	// Handle environment variables for other settings
 	if unwrap := os.Getenv("LOG_LEVEL"); unwrap != "" {
 		cfg.LogLevel = unwrap
@@ -276,8 +276,12 @@ func configLambda() {
 		cfg.IncludeGroups = strings.Split(unwrap, ",")
 		log.WithField("IncludeGroups", unwrap).Debug("from EnvVar")
 	}
-}
 
+	if unwrap := os.Getenv("DRY_RUN"); unwrap != "" {
+		cfg.DryRun = strings.ToLower(unwrap) == "true"
+		log.WithField("DryRun", unwrap).Debug("from EnvVar")
+	}
+}
 
 func getSecretFromCache(secretName string) string {
 	value, err := secretCache.GetSecretString(secretName)
@@ -323,4 +327,3 @@ func logConfig(cfg *config.Config) {
 		log.SetLevel(level)
 	}
 }
-
