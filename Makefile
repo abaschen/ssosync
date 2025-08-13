@@ -214,9 +214,9 @@ dev: go-build
 		-u $$(jq '.["ssosync/secrets/googleAdminEmail"]' ./cicd/cloudformation/cdk/cdk.context.json -r) \
 		-i $$(jq '.["ssosync/aws-sso/identityStoreId"]' ./cicd/cloudformation/cdk/cdk.context.json -r) \
 		-c ./cicd/cloudformation/cdk/google-service-account.json \
-		--log-level debug.PH
-
-ONY: check-tools
+		--log-level debug
+		
+.PHONY: check-tools
 check-tools:
 	@echo "Checking installed tools..."
 	@if [ -f $(MOCKERY) ]; then echo "✓ mockery: $$($(MOCKERY) version)"; else echo "✗ mockery: not installed"; fi
