@@ -624,23 +624,23 @@ func (s *syncGSuite) getGoogleGroupsAndUsers(queryGroups string, queryUsers stri
 		log.Info("Precaching DISABLED, caching on the fly")
 	}
 
-        // For larger directories this will reduce execution time and avoid throttling limits
-        // however if you have directory with 10s of 1000s of users you may want to down scope 
-        // this to a specific OU path or disable by leaving empty.
-        if s.cfg.PrecacheQueries != "DISABLED" {
- 		log.Info("Precaching users from google, for the following querie strings '" + s.cfg.PrecacheQueries + "'.") 
-        	googleUsers, err = s.google.GetUsers(s.cfg.PrecacheQueries) 
+	// For larger directories this will reduce execution time and avoid throttling limits
+	// however if you have directory with 10s of 1000s of users you may want to down scope
+	// this to a specific OU path or disable by leaving empty.
+	if s.cfg.PrecacheQueries != "DISABLED" {
+		log.Info("Precaching users from google, for the following querie strings '" + s.cfg.PrecacheQueries + "'.")
+		googleUsers, err = s.google.GetUsers(s.cfg.PrecacheQueries)
 		if err != nil {
-                        return nil, nil, nil, err
-                }
+			return nil, nil, nil, err
+		}
 
 		if len(googleUsers) == 0 {
 			log.Warn("Precaching failed, caching on the fly")
 		} else {
-        		for _, u := range googleUsers {
-        	      		log.WithField("email", u).Debug("processing member of gUserDetailCache")
-                		gUserDetailCache[u.PrimaryEmail] = u
-        		}
+			for _, u := range googleUsers {
+				log.WithField("email", u).Debug("processing member of gUserDetailCache")
+				gUserDetailCache[u.PrimaryEmail] = u
+			}
 		}
 	} else {
 		log.Info("Precaching DISABLED, caching on the fly")

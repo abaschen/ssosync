@@ -76,3 +76,11 @@ func (d *DryIdentityStore) ListGroups(ctx context.Context, params *identitystore
 func (d *DryIdentityStore) ListUsers(ctx context.Context, params *identitystore.ListUsersInput, optFns ...func(*identitystore.Options)) (*identitystore.ListUsersOutput, error) {
 	return d.client.ListUsers(ctx, params, optFns...)
 }
+
+func (d *DryIdentityStore) CreateUser(ctx context.Context, params *identitystore.CreateUserInput, optFns ...func(*identitystore.Options)) (*identitystore.CreateUserOutput, error) {
+	log.WithField("userName", *params.UserName).Info("DRY RUN: Would create user")
+	return &identitystore.CreateUserOutput{
+		UserId:          aws.String(*params.UserName + "-virtual"),
+		IdentityStoreId: params.IdentityStoreId,
+	}, nil
+}
