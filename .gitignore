@@ -43,3 +43,4 @@ staging.yaml
 cicd/.DS_Store
 *.swo
 cicd/.DS_Store
+mocks_*.go
