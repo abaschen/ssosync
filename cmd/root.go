@@ -276,6 +276,11 @@ func configLambda() {
 		cfg.IncludeGroups = strings.Split(unwrap, ",")
 		log.WithField("IncludeGroups", unwrap).Debug("from EnvVar")
 	}
+
+	if unwrap := os.Getenv("DRY_RUN"); unwrap != "" {
+		cfg.DryRun = strings.ToLower(unwrap) == "true"
+		log.WithField("DryRun", unwrap).Debug("from EnvVar")
+	}
 }
 
 
